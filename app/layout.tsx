@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
+import UmiProvider from "@/context/umi-provider";
+import { WalletAdapterProvider } from "@/context/wallet-adapter-provider";
 import { ThemeProvider } from "next-themes";
 
 const geistSans = Geist({
@@ -38,12 +40,16 @@ export default function RootLayout({
 	children: React.ReactNode;
 }>) {
 	return (
-		<html lang="en">
-			<body
-				className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} antialiased`}
-			>
-				<ThemeProvider>{children}</ThemeProvider>
-			</body>
-		</html>
+		<WalletAdapterProvider>
+			<UmiProvider>
+				<html lang="en" suppressHydrationWarning>
+					<body
+						className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} antialiased`}
+					>
+						<ThemeProvider>{children}</ThemeProvider>
+					</body>
+				</html>
+			</UmiProvider>
+		</WalletAdapterProvider>
 	);
 }
