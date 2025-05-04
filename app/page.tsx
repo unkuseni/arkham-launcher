@@ -1,4 +1,12 @@
+"use client";
+import dynamic from "next/dynamic";
 import Image from "next/image";
+
+const WalletMultiButtonDynamic = dynamic(
+	async () =>
+		(await import("@solana/wallet-adapter-react-ui")).WalletMultiButton,
+	{ ssr: false },
+);
 
 export default function Home() {
 	return (
@@ -49,6 +57,7 @@ export default function Home() {
 					>
 						Read our docs
 					</a>
+					<WalletMultiButtonDynamic />
 				</div>
 			</main>
 			<footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
