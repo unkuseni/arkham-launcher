@@ -1,13 +1,12 @@
 "use client";
 import { WalletProvider } from "@solana/wallet-adapter-react";
-import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import {
 	PhantomWalletAdapter,
 	SolflareWalletAdapter,
 	TrustWalletAdapter,
 } from "@solana/wallet-adapter-wallets";
 import { type ReactNode, useMemo } from "react";
-import "@solana/wallet-adapter-react-ui/styles.css";
+import { WalletModalProvider } from "./useWalletModal";
 
 /**
  * A component that wraps the `WalletProvider` and `WalletModalProvider` from
