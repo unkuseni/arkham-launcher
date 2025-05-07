@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
+import { ThemeProviderWrapper } from "@/context/theme-provider";
 import UmiProvider from "@/context/umi-provider";
 import { WalletAdapterProvider } from "@/context/wallet-adapter-provider";
-import { ThemeProvider } from "next-themes";
 
 const geistSans = Geist({
 	variable: "--font-geist-sans",
@@ -46,7 +46,7 @@ export default function RootLayout({
 					<body
 						className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} antialiased`}
 					>
-						<ThemeProvider>{children}</ThemeProvider>
+						<ThemeProviderWrapper>{children}</ThemeProviderWrapper>
 					</body>
 				</html>
 			</UmiProvider>
