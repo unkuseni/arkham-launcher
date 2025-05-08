@@ -1,3 +1,4 @@
+'use client';
 import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
@@ -28,8 +29,8 @@ const LABELS = {
 	"copy-address": "Copy address",
 	copied: "Copied",
 	disconnect: "Disconnect",
-	"has-wallet": "Connect",
-	"no-wallet": "Select Wallet",
+	"has-wallet": "Install Wallet",
+	"no-wallet": "Connect Wallet",
 } as const;
 
 type MultiWalletButtonProps = ButtonProps & {
@@ -104,7 +105,6 @@ const BaseMultiWalletButton = ({
 				onConnect?.();
 				break;
 			case "connected":
-				// Handled by DropdownMenu
 				break;
 		}
 	}, [buttonState, onConnect, setModalVisible]);
@@ -212,7 +212,7 @@ export const ConnectButton: FC<ButtonProps> = ({
 		<Button
 			className={
 				className ||
-				"rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:text-black hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
+				"rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex gap-2 items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:text-black hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-fit sm:w-auto md:w-[158px]"
 			}
 			disabled={disabled}
 			style={style}
@@ -220,9 +220,9 @@ export const ConnectButton: FC<ButtonProps> = ({
 			tabIndex={tabIndex}
 			type="button"
 		>
-			{startIcon && <span className="mr-2">{startIcon}</span>}
+			{startIcon && <span>{startIcon}</span>}
 			<div className="">{children || "Connect"}</div>
-			{endIcon && <span className="ml-2">{endIcon}</span>}
+			{endIcon && <span>{endIcon}</span>}
 		</Button>
 	);
 };
