@@ -128,7 +128,11 @@ export const WalletModal: FC<WalletModalProps> = ({ className = "" }) => {
 								</CollapsibleContent>
 
 								<CollapsibleTrigger asChild>
-									<Button variant="ghost" className="w-full">
+									<Button
+										variant="ghost"
+										className={`
+					rounded-md border px-4 py-2 font-mono text-sm bg-white text-black dark:bg-black dark:text-white justify-between hover:bg-accent dark:hover:bg-accent-foreground ${expanded ? "justify-start mt-4" : ""}`}
+									>
 										{expanded ? "Less" : "More"} options
 										<ChevronDown
 											className={`ml-2 h-4 w-4 transition-transform ${
@@ -193,7 +197,7 @@ export const WalletListItem: FC<WalletListItemProps> = ({
 	wallet,
 }) => {
 	return (
-		<li>
+		<li className="list-none">
 			<Button
 				className={
 					"rounded-md border px-4 py-2 font-mono text-sm bg-white text-black dark:bg-black dark:text-white justify-between w-full hover:bg-accent dark:hover:bg-accent-foreground"
@@ -203,7 +207,7 @@ export const WalletListItem: FC<WalletListItemProps> = ({
 			>
 				<div className="flex items-center gap-2">
 					<div className="w-6 h-6">
-						<WalletIcon wallet={wallet} />
+						<WalletIcon wallet={wallet} width={24} height={24} />
 					</div>
 					<span className="font-medium">{wallet.adapter.name}</span>
 				</div>

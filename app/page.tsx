@@ -27,13 +27,13 @@ export default function Home() {
 					</p>
 					<div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
 						<Link
-							href={"/create-launch"}
+							href={"/dashboard"}
 							className="bg-blue-600 text-white font-semibold px-6 py-3 rounded-xl hover:opacity-90 transition"
 						>
 							Create Launch
 						</Link>
 						<Link
-							href={"/create-token"}
+							href={"/dashboard"}
 							className="border border-blue-600 text-blue-600 font-semibold px-6 py-3 rounded-xl hover:bg-blue-100 hover:dark:bg-blue-800 transition"
 						>
 							Create Token
