@@ -1,3 +1,4 @@
+import { AppSidebar } from "@/components/app-sidebar";
 import { Sidebar, SidebarProvider } from "@/components/ui/sidebar";
 import { ThemeProviderWrapper } from "@/context/theme-provider";
 import UmiProvider from "@/context/umi-provider";
@@ -45,14 +46,12 @@ export default function RootLayout({
 			<UmiProvider>
 				<html lang="en" suppressHydrationWarning>
 					<body
-						className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} antialiased`}
+						className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} antialiased flex flex-row items-center justify-center`}
 					>
-						<ThemeProviderWrapper>
-							<SidebarProvider>
-								<Sidebar />
-							</SidebarProvider>
-							{children}
-						</ThemeProviderWrapper>
+						<SidebarProvider className="w-64">
+							<AppSidebar />
+							<ThemeProviderWrapper>{children}</ThemeProviderWrapper>
+						</SidebarProvider>
 					</body>
 				</html>
 			</UmiProvider>
