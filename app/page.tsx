@@ -10,6 +10,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { ChartAreaIcon, Link as LinkIcon, Shield, Star } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import CountUp from "react-countup";
 
@@ -31,7 +32,7 @@ export default function Home() {
 const Hero = () => {
 	const [checked, setChecked] = useState(false);
 	const signer = useUmiStore((state) => state.signer?.publicKey) as string;
-
+	const router = useRouter();
 	const handleSign = useCallback(async () => {
 		if (!signer) {
 			alert("Please connect your wallet first.");
@@ -50,6 +51,7 @@ const Hero = () => {
 		console.log("Signature:", signature);
 		console.log("Timestamp:", timestamp);
 		console.log("Policy signed successfully!");
+		router.push("/dashboard");
 	}, [signer]);
 
 	return (
