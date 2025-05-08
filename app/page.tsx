@@ -19,7 +19,7 @@ export default function Home() {
 			<Header />
 			<main
 				className={
-					"min-h-[calc(100vh-96px)] flex flex-col items-center justify-center transition-colors duration-300 px-4 py-2.5 md:px-6 md:py-4 xl:px-8 xl:py-6 "
+					"min-h-[calc(100vh-64px)] md:min-h-[calc(100vh-96px)] flex flex-col items-center justify-center transition-colors duration-300 px-4 py-2.5 md:px-6 md:py-4 xl:px-8 xl:py-6 "
 				}
 			>
 				<Hero />
@@ -79,21 +79,26 @@ const Hero = () => {
 				</ul>
 			</div>
 			<div className="flex flex-col items-center justify-center gap-4 w-full max-w-xl mx-auto">
-				<div className="flex items-center gap-2 font-sans">
+				<div className="flex gap-2 items-center justify-center font-sans">
 					<Checkbox
 						id="terms"
 						checked={checked}
 						onClick={() => setChecked(!checked)}
 					/>
 					<Label htmlFor="terms">
-						I agree to the{" "}
-						<Link href="#" className="text-blue-500 hover:text-blue-400">
-							Terms of Service
-						</Link>{" "}
-						and{" "}
-						<Link href="#" className="text-blue-500 hover:text-blue-400">
-							Privacy Policy
-						</Link>
+						<span>
+							I agree to the
+							<Link
+								href="#"
+								className="text-blue-500 hover:text-blue-400 inline"
+							>
+								Terms of Service
+							</Link>{" "}
+							and{" "}
+							<Link href="#" className="text-blue-500 hover:text-blue-400">
+								Privacy Policy
+							</Link>
+						</span>
 					</Label>
 				</div>
 				<Button onClick={handleSign} disabled={!checked}>
