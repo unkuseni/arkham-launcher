@@ -1,7 +1,6 @@
 import useUmiStore from "@/store/useUmiStore";
 import { signerIdentity } from "@metaplex-foundation/umi";
 import { base58 } from "@metaplex-foundation/umi/serializers";
-import { useWallet } from "@solana/wallet-adapter-react";
 
 export interface PolicyAgreement {
 	user: string; // wallet pubkey as base58

@@ -52,7 +52,7 @@ const Hero = () => {
 		console.log("Timestamp:", timestamp);
 		console.log("Policy signed successfully!");
 		router.push("/dashboard");
-	}, [signer]);
+	}, [signer, router]);
 
 	return (
 		<div className="w-full max-w-7xl mx-auto flex flex-col items-center justify-center space-y-8 py-12 px-4 bg-[url('/hero-bg.jpg')] bg-cover bg-center bg-no-repeat rounded-3xl text-white">
