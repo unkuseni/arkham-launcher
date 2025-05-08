@@ -87,7 +87,7 @@ const Hero = () => {
 					/>
 					<Label htmlFor="terms">
 						<span>
-							I agree to the
+							I agree to the{" "}
 							<Link
 								href="#"
 								className="text-blue-500 hover:text-blue-400 inline"
