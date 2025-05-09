@@ -1,12 +1,12 @@
-'use client';
+"use client";
 import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
+	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useWalletModal } from "@/context/useWalletModal";
-import { DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
 import type { WalletName } from "@solana/wallet-adapter-base";
 import { useWalletMultiButton } from "@solana/wallet-adapter-base-ui";
 import type { Wallet } from "@solana/wallet-adapter-react";
