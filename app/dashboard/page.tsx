@@ -1,15 +1,14 @@
+import DashboardHeader from "@/components/header/dashboard-header";
 import { AppSidebar } from "@/components/sidebar/app-sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
 const Page = () => {
 	return (
 		<>
-			<SidebarProvider className="w-[18rem]">
-				<AppSidebar variant="floating" />
+			<SidebarProvider>
+				<AppSidebar variant="inset" />
 				<SidebarInset>
-					<div>
-						<h2>dashboard</h2>
-					</div>
+					<DashboardHeader />
 				</SidebarInset>
 			</SidebarProvider>
 		</>
