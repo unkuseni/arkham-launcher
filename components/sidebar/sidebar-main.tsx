@@ -45,9 +45,8 @@ const data = [
 
 export const SidebarMain = ({ items = data }: SidebarMainProps) => {
 	const pathname = usePathname();
-
 	const currentPath = pathname.split("/").pop();
-	console.log(currentPath);
+	const lastTwoPaths = pathname.split("/").slice(-2).join("/");
 	return (
 		<SidebarGroup>
 			<SidebarGroupLabel className="font-sans font-semibold text-sm">
@@ -60,7 +59,7 @@ export const SidebarMain = ({ items = data }: SidebarMainProps) => {
 							<SidebarMenuItem key={item.title}>
 								<SidebarMenuButton
 									tooltip={item.title}
-									className="font-inter font-bold active:bg-green-500"
+									className="font-inter font-bold"
 									isActive={currentPath === item.url}
 								>
 									{item.icon && <item.icon className="size-4" />}

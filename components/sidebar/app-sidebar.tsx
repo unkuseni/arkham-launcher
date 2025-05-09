@@ -7,6 +7,7 @@ import {
 	SidebarHeader,
 	SidebarRail,
 } from "../ui/sidebar";
+import { MultiWalletButton } from "../wallet-btn";
 import { IconHeader } from "./icon-header";
 import SidebarMain from "./sidebar-main";
 
@@ -14,7 +15,7 @@ const data = [
 	{
 		label: "Dashboard",
 		title: "Create a token",
-		url: "/",
+		url: "dashboard",
 		icon: Coins,
 		items: [],
 	},
@@ -29,7 +30,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 			<SidebarContent>
 				<SidebarMain items={data} />
 			</SidebarContent>
-			<SidebarFooter></SidebarFooter>
+			<SidebarFooter className="flex items-center">
+				<MultiWalletButton />
+			</SidebarFooter>
 			<SidebarRail />
 		</Sidebar>
 	);
