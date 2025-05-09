@@ -23,7 +23,7 @@ const data = [
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 	return (
-		<Sidebar collapsible="icon" {...props}>
+		<Sidebar collapsible="offcanvas" {...props}>
 			<SidebarHeader>
 				<IconHeader text="Arkham" />
 			</SidebarHeader>
@@ -33,7 +33,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 			<SidebarFooter className="flex items-center">
 				<MultiWalletButton />
 			</SidebarFooter>
-			<SidebarRail />
 		</Sidebar>
 	);
 }
