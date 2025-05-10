@@ -2,6 +2,7 @@
 import { Separator } from "@/components/ui/separator";
 import { capitalize } from "@/lib/utils";
 import { usePathname } from "next/navigation";
+import React from "react"; // Import React if not already for Fragments or flatMap usage
 import {
 	Breadcrumb,
 	BreadcrumbItem,
@@ -24,11 +25,12 @@ const DashboardHeader = () => {
 				<Separator orientation="vertical" className="mr-2 h-4" />
 				<Breadcrumb>
 					<BreadcrumbList>
-						{pathSegments.map((segment, index) => {
+						{pathSegments.flatMap((segment, index) => {
 							const href = `/${pathSegments.slice(0, index + 1).join("/")}`;
 							const isLast = index === pathSegments.length - 1;
 							const displayName = capitalize(segment.replace(/-/g, " "));
-							return (
+
+							const itemElement = (
 								<BreadcrumbItem key={href}>
 									{isLast ? (
 										<BreadcrumbPage className="font-bold font-inter">
@@ -39,11 +41,20 @@ const DashboardHeader = () => {
 											{displayName}
 										</BreadcrumbLink>
 									)}
-									{!isLast && (
-										<BreadcrumbSeparator className="hidden md:block mx-2 h-4" />
-									)}
 								</BreadcrumbItem>
 							);
+
+							if (isLast) {
+								return [itemElement];
+							}
+
+							return [
+								itemElement,
+								<BreadcrumbSeparator
+									key={`${href}-separator`}
+									className="hidden md:block mx-2 h-4" // Ensure className is applied here
+								/>,
+							];
 						})}
 					</BreadcrumbList>
 				</Breadcrumb>

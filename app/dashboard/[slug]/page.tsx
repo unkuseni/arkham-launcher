@@ -1,3 +1,4 @@
+import CreateToken from "@/components/forms/create-token";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 
 export default async function Page({
@@ -8,7 +9,9 @@ export default async function Page({
 	const { slug } = await params;
 	return (
 		<>
-			<div className="p-6">My Post: {slug}</div>
+			<div className="p-6">
+				<CreateToken />
+			</div>
 		</>
 	);
 }
