@@ -93,7 +93,7 @@ const BaseMultiWalletButton = ({
 		if (children) return children;
 		if (publicKey)
 			return `${publicKey.toBase58().slice(0, 4)}..${publicKey.toBase58().slice(-4)}`;
-		return labels[buttonState] || labels["no-wallet"];
+		return labels[buttonState as keyof typeof labels] || labels["no-wallet"];
 	}, [children, publicKey, buttonState, labels]);
 
 	const handleClick = useCallback(() => {
