@@ -34,7 +34,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 				<IconHeader text="Arkham" />
 			</SidebarHeader>
 			<SidebarContent>
-				<SidebarMain items={data} />
+				<SidebarMain links={data} />
 			</SidebarContent>
 			<SidebarFooter className="flex items-center">
 				<MultiWalletButton />

@@ -1,6 +1,7 @@
 import { ChevronRight, House, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Fragment } from "react";
 import {
 	Collapsible,
 	CollapsibleContent,
@@ -29,7 +30,7 @@ interface SidebarMainItem {
 }
 
 interface SidebarMainProps {
-	items: SidebarMainItem[];
+	links: SidebarMainItem[];
 }
 
 const data = [
@@ -42,20 +43,21 @@ const data = [
 	},
 ];
 
-export const SidebarMain = ({ items = data }: SidebarMainProps) => {
+export const SidebarMain = ({ links = data }: SidebarMainProps) => {
 	const pathname = usePathname();
 	const currentPath = pathname.split("/").pop();
 	return (
 		<SidebarGroup>
-			{items.map((item) => {
+			{links.map((item) => {
+				const itemKey = item.url || item.title;
 				if (item.items?.length === 0) {
 					return (
-						<>
+						<Fragment key={itemKey}>
 							<SidebarGroupLabel className="font-sans font-semibold text-sm">
 								{item.label}
 							</SidebarGroupLabel>
 							<SidebarMenu>
-								<SidebarMenuItem key={item.title}>
+								<SidebarMenuItem>
 									<SidebarMenuButton
 										tooltip={item.title}
 										className="font-inter font-bold"
@@ -72,20 +74,16 @@ export const SidebarMain = ({ items = data }: SidebarMainProps) => {
 									</SidebarMenuButton>
 								</SidebarMenuItem>
 							</SidebarMenu>
-						</>
+						</Fragment>
 					);
 				}
 				return (
-					<>
-						<SidebarGroupLabel
-							className="font-sans font-semibold text-sm"
-							key={item.label}
-						>
+					<Fragment key={itemKey}>
+						<SidebarGroupLabel className="font-sans font-semibold text-sm">
 							{item.label}
 						</SidebarGroupLabel>
-						<SidebarMenu key={item.label}>
+						<SidebarMenu>
 							<Collapsible
-								key={item.title}
 								defaultOpen={currentPath === item.url}
 								className="group/collapsible"
 								asChild
@@ -123,7 +121,7 @@ export const SidebarMain = ({ items = data }: SidebarMainProps) => {
 								</SidebarMenuItem>
 							</Collapsible>
 						</SidebarMenu>
-					</>
+					</Fragment>
 				);
 			})}
 		</SidebarGroup>
