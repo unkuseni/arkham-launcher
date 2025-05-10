@@ -3,7 +3,6 @@ import {
 	SidebarMenu,
 	SidebarMenuButton,
 	SidebarMenuItem,
-	useSidebar,
 } from "@/components/ui/sidebar";
 
 import { Rocket } from "lucide-react";
@@ -26,15 +25,17 @@ export function IconHeader({
 					size="lg"
 					className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground justify-between"
 				>
-					<div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-gray-300 dark:bg-gray-600">
-						<Link href={url}>
-							<Rocket className="size-4" />
+					<div className="flex items-center justify-between w-full">
+						<div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-gray-300 dark:bg-gray-600">
+							<Link href={url}>
+								<Rocket className="size-4" />
+							</Link>
+						</div>
+						<Link href={url} className="flex items-center gap-5 ">
+							<h2 className="text-xs font-bold font-inter">{text}</h2>
 						</Link>
+						<ThemeSwitcher />
 					</div>
-					<Link href={url} className="flex items-center gap-5 ">
-						<h2 className="text-xs font-bold font-inter">{text}</h2>
-					</Link>
-					<ThemeSwitcher />
 				</SidebarMenuButton>
 			</SidebarMenuItem>
 		</SidebarMenu>

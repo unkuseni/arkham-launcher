@@ -1,4 +1,4 @@
-import { SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 
 export default async function Page({
 	params,
@@ -8,9 +8,6 @@ export default async function Page({
 	const { slug } = await params;
 	return (
 		<>
-			<div>
-				<SidebarTrigger />
-			</div>
 			<div>My Post: {slug}</div>
 		</>
 	);

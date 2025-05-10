@@ -1,7 +1,6 @@
 import { ChevronRight, House, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { FC } from "react";
 import {
 	Collapsible,
 	CollapsibleContent,
@@ -46,62 +45,87 @@ const data = [
 export const SidebarMain = ({ items = data }: SidebarMainProps) => {
 	const pathname = usePathname();
 	const currentPath = pathname.split("/").pop();
-	const lastTwoPaths = pathname.split("/").slice(-2).join("/");
 	return (
 		<SidebarGroup>
-			<SidebarGroupLabel className="font-sans font-semibold text-sm">
-				Dashboard
-			</SidebarGroupLabel>
-			<SidebarMenu>
-				{items.map((item) => {
-					if (item.items?.length === 0) {
-						return (
-							<SidebarMenuItem key={item.title}>
-								<SidebarMenuButton
-									tooltip={item.title}
-									className="font-inter font-bold"
-									isActive={currentPath === item.url}
-								>
-									{item.icon && <item.icon className="size-4" />}
-									<span>{item.title}</span>
-								</SidebarMenuButton>
-							</SidebarMenuItem>
-						);
-					}
+			{items.map((item) => {
+				if (item.items?.length === 0) {
 					return (
-						<Collapsible
-							key={item.title}
-							defaultOpen={currentPath === item.url}
-							className="group/collapsible"
-							asChild
-						>
-							<SidebarMenuItem>
-								<CollapsibleTrigger asChild>
+						<>
+							<SidebarGroupLabel className="font-sans font-semibold text-sm">
+								{item.label}
+							</SidebarGroupLabel>
+							<SidebarMenu>
+								<SidebarMenuItem key={item.title}>
 									<SidebarMenuButton
 										tooltip={item.title}
 										className="font-inter font-bold"
+										isActive={currentPath === item.url}
+										asChild
 									>
-										{item.icon && <item.icon className="size-4" />}
-										<span>{item.title}</span>
-										<ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+										<Link
+											href={`/dashboard/${item.url}`}
+											className="flex items-center gap-2"
+										>
+											{item.icon && <item.icon className="size-4" />}
+											{item.title}
+										</Link>
 									</SidebarMenuButton>
-								</CollapsibleTrigger>
-								<CollapsibleContent>
-									<SidebarMenuSub>
-										{item.items?.map((subItem) => (
-											<SidebarMenuSubItem key={subItem.title}>
-												<SidebarMenuSubButton asChild className="font-inter">
-													<Link href={subItem.url}>{subItem.title}</Link>
-												</SidebarMenuSubButton>
-											</SidebarMenuSubItem>
-										))}
-									</SidebarMenuSub>
-								</CollapsibleContent>
-							</SidebarMenuItem>
-						</Collapsible>
+								</SidebarMenuItem>
+							</SidebarMenu>
+						</>
 					);
-				})}
-			</SidebarMenu>
+				}
+				return (
+					<>
+						<SidebarGroupLabel
+							className="font-sans font-semibold text-sm"
+							key={item.label}
+						>
+							{item.label}
+						</SidebarGroupLabel>
+						<SidebarMenu key={item.label}>
+							<Collapsible
+								key={item.title}
+								defaultOpen={currentPath === item.url}
+								className="group/collapsible"
+								asChild
+							>
+								<SidebarMenuItem>
+									<CollapsibleTrigger asChild>
+										<SidebarMenuButton
+											tooltip={item.title}
+											className="font-inter font-bold"
+										>
+											{item.icon && <item.icon className="size-4" />}
+											<span>{item.title}</span>
+											<ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+										</SidebarMenuButton>
+									</CollapsibleTrigger>
+									<CollapsibleContent>
+										<SidebarMenuSub>
+											{item.items?.map((subItem) => (
+												<SidebarMenuSubItem key={subItem.title}>
+													<SidebarMenuSubButton
+														asChild
+														className="font-inter"
+														isActive={currentPath === subItem.url}
+													>
+														<Link
+															href={`/dashboard/${item.url}/${subItem.url}`}
+														>
+															{subItem.title}
+														</Link>
+													</SidebarMenuSubButton>
+												</SidebarMenuSubItem>
+											))}
+										</SidebarMenuSub>
+									</CollapsibleContent>
+								</SidebarMenuItem>
+							</Collapsible>
+						</SidebarMenu>
+					</>
+				);
+			})}
 		</SidebarGroup>
 	);
 };

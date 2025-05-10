@@ -5,7 +5,6 @@ import {
 	SidebarContent,
 	SidebarFooter,
 	SidebarHeader,
-	SidebarRail,
 } from "../ui/sidebar";
 import { MultiWalletButton } from "../wallet-btn";
 import { IconHeader } from "./icon-header";
@@ -14,8 +13,15 @@ import SidebarMain from "./sidebar-main";
 const data = [
 	{
 		label: "Dashboard",
+		title: "Home",
+		url: "",
+		icon: Coins,
+		items: [],
+	},
+	{
+		label: "Launchpad",
 		title: "Create a token",
-		url: "dashboard",
+		url: "create-token",
 		icon: Coins,
 		items: [],
 	},
