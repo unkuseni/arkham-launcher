@@ -8,7 +8,7 @@ export default async function Page({
 	const { slug } = await params;
 	return (
 		<>
-			<div>My Post: {slug}</div>
+			<div className="p-6">My Post: {slug}</div>
 		</>
 	);
 }
