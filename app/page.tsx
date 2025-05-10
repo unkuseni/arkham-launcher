@@ -5,14 +5,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { type PolicyAgreement, signPolicy } from "@/lib/policy";
 import useUmiStore from "@/store/useUmiStore";
-import { set } from "@metaplex-foundation/umi/serializers";
-import { useWallet } from "@solana/wallet-adapter-react";
+import Cookies from "js-cookie";
 import { ChartAreaIcon, Link as LinkIcon, Shield, Star } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
-import CountUp from "react-countup";
 
 export default function Home() {
 	return (
@@ -51,6 +48,8 @@ const Hero = () => {
 		console.log("Signature:", signature);
 		console.log("Timestamp:", timestamp);
 		console.log("Policy signed successfully!");
+
+		Cookies.set("policy_signed", "true", { expires: 1 });
 		router.push("/dashboard");
 	}, [signer, router]);
 
