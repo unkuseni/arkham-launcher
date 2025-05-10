@@ -1,5 +1,5 @@
 "use client";
-import { Coins } from "lucide-react";
+import { Coins, House } from "lucide-react";
 import {
 	Sidebar,
 	SidebarContent,
@@ -15,7 +15,7 @@ const data = [
 		label: "Dashboard",
 		title: "Home",
 		url: "",
-		icon: Coins,
+		icon: House,
 		items: [],
 	},
 	{
