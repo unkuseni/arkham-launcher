@@ -1,5 +1,5 @@
 import CreateToken from "@/components/forms/create-token";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import type { ReactNode } from "react";
 
 export default async function Page({
 	params,
@@ -7,11 +7,16 @@ export default async function Page({
 	params: Promise<{ slug: string }>;
 }) {
 	const { slug } = await params;
+
+	let content: ReactNode;
+
+	if (slug === "create-token") {
+		content = <CreateToken />;
+	}
+
 	return (
 		<>
-			<div className="p-6">
-				<CreateToken />
-			</div>
+			<div className="p-6">{content}</div>
 		</>
 	);
 }
