@@ -17,7 +17,16 @@ export const formSchema = z.object({
 	description: z
 		.string()
 		.min(3, "Description must be at least 3 characters long."),
-	image: z.string().url("Must be a valid URL."),
+	image: z
+		.instanceof(File, { message: "Please upload an image file." })
+		.refine((file) => file.size <= 5000000, "Max file size is 5MB.") // Example: 5MB max size
+		.refine(
+			(file) =>
+				["image/jpeg", "image/png", "image/webp", "image/gif"].includes(
+					file.type,
+				),
+			"Only .jpg, .jpeg, .png, .webp and .gif formats are supported.",
+		),
 	// social links and tags: website, telegram, discord, twitter, reddit
 	socialLinks: z.array(z.string().url("Must be a valid URL.")).optional(),
 	tags: z.array(z.string()).optional(),
