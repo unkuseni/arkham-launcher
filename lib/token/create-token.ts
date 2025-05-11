@@ -27,7 +27,7 @@ export const formSchema = z.object({
 				),
 			"Only .jpg, .jpeg, .png, .webp and .gif formats are supported.",
 		)
-		.optional(), // Added .optional() to align with defaultValues
+		.optional(),
 	// social links and tags: website, telegram, discord, twitter, reddit
 	socialLinks: z
 		.object({
@@ -67,7 +67,7 @@ export const formSchema = z.object({
 					.or(z.literal("")),
 			}),
 		)
-		.optional(), // Changed from .default([]) to .optional()
+		.optional(),
 	customAddress: z
 		.string()
 		.min(2)

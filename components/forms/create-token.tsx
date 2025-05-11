@@ -59,7 +59,7 @@ const TokenForm = () => {
 	const [showSocialLinks, setShowSocialLinks] = useState(false);
 	const [showTags, setShowTags] = useState(false);
 
-	const form = useForm<z.infer<typeof formSchema>>({
+	const form = useForm({
 		resolver: zodResolver(formSchema),
 		defaultValues: {
 			name: "",
