@@ -26,10 +26,48 @@ export const formSchema = z.object({
 					file.type,
 				),
 			"Only .jpg, .jpeg, .png, .webp and .gif formats are supported.",
-		),
+		)
+		.optional(), // Added .optional() to align with defaultValues
 	// social links and tags: website, telegram, discord, twitter, reddit
-	socialLinks: z.array(z.string().url("Must be a valid URL.")).optional(),
-	tags: z.array(z.string()).optional(),
+	socialLinks: z
+		.object({
+			website: z
+				.string()
+				.url("Must be a valid URL.")
+				.or(z.literal(""))
+				.optional(),
+			telegram: z
+				.string()
+				.url("Must be a valid URL.")
+				.or(z.literal(""))
+				.optional(),
+			discord: z
+				.string()
+				.url("Must be a valid URL.")
+				.or(z.literal(""))
+				.optional(),
+			twitter: z
+				.string()
+				.url("Must be a valid URL.")
+				.or(z.literal(""))
+				.optional(),
+			reddit: z
+				.string()
+				.url("Must be a valid URL.")
+				.or(z.literal(""))
+				.optional(),
+		})
+		.optional(),
+	tags: z
+		.array(
+			z.object({
+				value: z
+					.string()
+					.min(1, "Tag cannot be empty when provided.")
+					.or(z.literal("")),
+			}),
+		)
+		.optional(), // Changed from .default([]) to .optional()
 	customAddress: z
 		.string()
 		.min(2)

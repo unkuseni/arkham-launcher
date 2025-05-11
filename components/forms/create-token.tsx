@@ -2,7 +2,7 @@
 import { formSchema } from "@/lib/token/create-token";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useFieldArray, useForm } from "react-hook-form";
 import type { z } from "zod";
 import { Button } from "../ui/button";
 import {
@@ -56,6 +56,9 @@ export default CreateToken;
 
 const TokenForm = () => {
 	const [imagePreview, setImagePreview] = useState<string | null>(null);
+	const [showSocialLinks, setShowSocialLinks] = useState(false);
+	const [showTags, setShowTags] = useState(false);
+
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
 		defaultValues: {
@@ -65,16 +68,39 @@ const TokenForm = () => {
 			supply: 1000000, // Default supply
 			description: "",
 			image: undefined, // Changed from "" to undefined for File input
-			socialLinks: [],
-			tags: [],
+			socialLinks: {
+				website: "",
+				telegram: "",
+				discord: "",
+				twitter: "",
+				reddit: "",
+			},
+			tags: [], // Updated to empty array for optional field
 			customAddress: "",
 		},
+	});
+
+	const {
+		fields: tagFields,
+		append: appendTag,
+		remove: removeTag,
+	} = useFieldArray({
+		control: form.control,
+		name: "tags",
 	});
 
 	function onSubmit(values: z.infer<typeof formSchema>) {
 		// Do something with the form values.
 		// ✅ This will be type-safe and validated.
-		console.log(values);
+		// Transform socialLinks and tags
+		const transformedValues = {
+			...values,
+			socialLinks: values.socialLinks,
+			tags: (values.tags ?? [])
+				.filter((tag) => tag.value && tag.value.trim() !== "")
+				.map((tag) => tag.value),
+		};
+		console.log(transformedValues);
 		// Here you would typically make an API call to your backend
 		// to create the token with the provided data.
 	}
@@ -89,7 +115,9 @@ const TokenForm = () => {
 							name="name"
 							render={({ field }) => (
 								<FormItem>
-									<FormLabel>Token Name</FormLabel>
+									<FormLabel>
+										Token Name <span className="text-red-500">*</span>
+									</FormLabel>
 									<FormControl>
 										<Input placeholder="e.g. My Awesome Token" {...field} />
 									</FormControl>
@@ -106,7 +134,9 @@ const TokenForm = () => {
 							name="ticker"
 							render={({ field }) => (
 								<FormItem>
-									<FormLabel>Ticker Symbol</FormLabel>
+									<FormLabel>
+										Ticker Symbol <span className="text-red-500">*</span>
+									</FormLabel>
 									<FormControl>
 										<Input placeholder="e.g. MAT" {...field} />
 									</FormControl>
@@ -125,7 +155,9 @@ const TokenForm = () => {
 							name="decimals"
 							render={({ field }) => (
 								<FormItem>
-									<FormLabel>Decimals</FormLabel>
+									<FormLabel>
+										Decimals <span className="text-red-500">*</span>
+									</FormLabel>
 									<FormControl>
 										<Input
 											type="number"
@@ -149,7 +181,9 @@ const TokenForm = () => {
 							name="supply"
 							render={({ field }) => (
 								<FormItem>
-									<FormLabel>Total Supply</FormLabel>
+									<FormLabel>
+										Total Supply <span className="text-red-500">*</span>
+									</FormLabel>
 									<FormControl>
 										<Input
 											type="number"
@@ -175,7 +209,9 @@ const TokenForm = () => {
 							name="description"
 							render={({ field }) => (
 								<FormItem>
-									<FormLabel>Description</FormLabel>
+									<FormLabel>
+										Description <span className="text-red-500">*</span>
+									</FormLabel>
 									<FormControl>
 										<Textarea
 											placeholder="Describe your token..."
@@ -251,6 +287,163 @@ const TokenForm = () => {
 								</FormItem>
 							)}
 						/>
+					</div>
+
+					{/* Social Links Section */}
+					<div className="space-y-2">
+						<Button
+							type="button"
+							variant="outline"
+							size="sm"
+							onClick={() => setShowSocialLinks(!showSocialLinks)}
+						>
+							{showSocialLinks ? "Hide" : "Show"} Social Links
+						</Button>
+						{showSocialLinks && (
+							<div className="space-y-4 p-4 border rounded-md">
+								<FormLabel>Social Links</FormLabel>
+								<FormField
+									control={form.control}
+									name="socialLinks.website"
+									render={({ field }) => (
+										<FormItem>
+											<FormLabel>Website</FormLabel>
+											<FormControl>
+												<Input placeholder="https://example.com" {...field} />
+											</FormControl>
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
+								<FormField
+									control={form.control}
+									name="socialLinks.telegram"
+									render={({ field }) => (
+										<FormItem>
+											<FormLabel>Telegram</FormLabel>
+											<FormControl>
+												<Input placeholder="https://t.me/username" {...field} />
+											</FormControl>
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
+								<FormField
+									control={form.control}
+									name="socialLinks.discord"
+									render={({ field }) => (
+										<FormItem>
+											<FormLabel>Discord</FormLabel>
+											<FormControl>
+												<Input
+													placeholder="https://discord.gg/invite"
+													{...field}
+												/>
+											</FormControl>
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
+								<FormField
+									control={form.control}
+									name="socialLinks.twitter"
+									render={({ field }) => (
+										<FormItem>
+											<FormLabel>Twitter</FormLabel>
+											<FormControl>
+												<Input
+													placeholder="https://twitter.com/username"
+													{...field}
+												/>
+											</FormControl>
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
+								<FormField
+									control={form.control}
+									name="socialLinks.reddit"
+									render={({ field }) => (
+										<FormItem>
+											<FormLabel>Reddit</FormLabel>
+											<FormControl>
+												<Input
+													placeholder="https://reddit.com/r/subreddit"
+													{...field}
+												/>
+											</FormControl>
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
+								<FormDescription>
+									Add links to your project's website, Twitter, Telegram, etc.
+								</FormDescription>
+							</div>
+						)}
+					</div>
+
+					{/* Tags Section */}
+					<div className="space-y-2">
+						<Button
+							type="button"
+							variant="outline"
+							size="sm"
+							onClick={() => setShowTags(!showTags)}
+							className="mb-2"
+						>
+							{showTags ? "Hide" : "Show"} Coin Tags
+						</Button>
+						{showTags && (
+							<div className="space-y-4 p-4 border rounded-md">
+								<FormLabel>Coin Tags</FormLabel>
+								{tagFields.map((field, index) => (
+									<FormField
+										control={form.control}
+										key={field.id}
+										name={`tags.${index}`}
+										render={({ field: itemField }) => (
+											<FormItem className="flex items-center space-x-2">
+												<FormControl>
+													<Input
+														placeholder="e.g. DeFi, Meme, GameFi"
+														{...itemField}
+														value={itemField.value?.value || ""}
+														onChange={(e) =>
+															itemField.onChange({ value: e.target.value })
+														}
+													/>
+												</FormControl>
+												<Button
+													type="button"
+													variant="destructive"
+													size="sm"
+													onClick={() => removeTag(index)}
+													disabled={
+														tagFields.length === 1 &&
+														itemField.value?.value === ""
+													}
+												>
+													Remove
+												</Button>
+												<FormMessage />
+											</FormItem>
+										)}
+									/>
+								))}
+								<Button
+									type="button"
+									variant="outline"
+									size="sm"
+									onClick={() => appendTag({ value: "" })}
+								>
+									Add Tag
+								</Button>
+								<FormDescription>
+									Add relevant tags to categorize your token.
+								</FormDescription>
+							</div>
+						)}
 					</div>
 
 					<FormField
