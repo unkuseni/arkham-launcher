@@ -77,6 +77,7 @@ const TokenForm = () => {
 			},
 			tags: [], // Updated to empty array for optional field
 			customAddress: "",
+			customAddressPosition: "prefix", // Default value for the new field
 		},
 	});
 
@@ -451,12 +452,29 @@ const TokenForm = () => {
 						name="customAddress"
 						render={({ field }) => (
 							<FormItem>
-								<FormLabel>Custom Address Prefix (Optional)</FormLabel>
-								<FormControl>
-									<Input placeholder="e.g. MYTKN" {...field} />
-								</FormControl>
+								<FormLabel>Custom Address (Optional)</FormLabel>
+								<div className="flex space-x-2">
+									<FormControl>
+										<Input placeholder="e.g. MYTKN" {...field} />
+									</FormControl>
+									<FormField
+										control={form.control}
+										name="customAddressPosition"
+										render={({ field: posField }) => (
+											<FormControl>
+												<select
+													{...posField}
+													className="border rounded px-2 py-1"
+												>
+													<option value="prefix">Prefix</option>
+													<option value="suffix">Suffix</option>
+												</select>
+											</FormControl>
+										)}
+									/>
+								</div>
 								<FormDescription>
-									A short prefix for a custom token address (if applicable).
+									A short prefix or suffix for a custom token address.
 								</FormDescription>
 								<FormMessage />
 							</FormItem>

@@ -73,6 +73,11 @@ export const formSchema = z.object({
 		.min(2)
 		.max(5, "Custom address must be at most 5 characters long.")
 		.optional(),
+	customAddressPosition: z
+		.enum(["prefix", "suffix"], {
+			description: "Whether custom address is a prefix or suffix",
+		})
+		.default("prefix"),
 	// modify creator info
 	//custom address generator
 	// airdrop tokens
