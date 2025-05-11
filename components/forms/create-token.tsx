@@ -13,6 +13,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "../ui/card";
+import { Checkbox } from "../ui/checkbox";
 import {
 	Form,
 	FormControl,
@@ -78,6 +79,9 @@ const TokenForm = () => {
 			tags: [], // Updated to empty array for optional field
 			customAddress: "",
 			customAddressPosition: "prefix", // Default value for the new field
+			revokeMint: false,
+			revokeUpdate: false,
+			revokeFreeze: false,
 		},
 	});
 
@@ -480,6 +484,74 @@ const TokenForm = () => {
 							</FormItem>
 						)}
 					/>
+					<div className="space-y-4">
+						<FormLabel>Token Permissions</FormLabel>
+						<div className="flex items-center justify-between">
+							<FormField
+								control={form.control}
+								name="revokeMint"
+								render={({ field }) => (
+									<FormItem className="flex items-center space-x-2">
+										<FormControl>
+											<Checkbox
+												checked={field.value}
+												onCheckedChange={field.onChange}
+											/>
+										</FormControl>
+										<div>
+											<FormLabel>Revoke Mint</FormLabel>
+											<FormDescription>
+												Revoke the ability to mint the token.
+											</FormDescription>
+											<FormMessage />
+										</div>
+									</FormItem>
+								)}
+							/>
+							<FormField
+								control={form.control}
+								name="revokeUpdate"
+								render={({ field }) => (
+									<FormItem className="flex items-center space-x-2">
+										<FormControl>
+											<Checkbox
+												checked={field.value}
+												onCheckedChange={field.onChange}
+											/>
+										</FormControl>
+										<div>
+											<FormLabel>Revoke Update</FormLabel>
+											<FormDescription>
+												Revoke the ability to update the token.
+											</FormDescription>
+											<FormMessage />
+										</div>
+									</FormItem>
+								)}
+							/>
+							<FormField
+								control={form.control}
+								name="revokeFreeze"
+								render={({ field }) => (
+									<FormItem className="flex items-center space-x-2">
+										<FormControl>
+											<Checkbox
+												checked={field.value}
+												onCheckedChange={field.onChange}
+											/>
+										</FormControl>
+										<div>
+											<FormLabel>Revoke Freeze</FormLabel>
+											<FormDescription>
+												Revoke the ability to freeze the token.
+											</FormDescription>
+											<FormMessage />
+										</div>
+									</FormItem>
+								)}
+							/>
+						</div>
+					</div>
 
 					<Button type="submit">Create Token</Button>
 				</form>
