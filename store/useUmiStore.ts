@@ -2,6 +2,7 @@ import { mplTokenMetadata } from "@metaplex-foundation/mpl-token-metadata";
 import { mplToolbox } from "@metaplex-foundation/mpl-toolbox";
 import {
 	type Signer,
+	type TransactionBuilder,
 	type Umi,
 	createNoopSigner,
 	publicKey,
@@ -100,6 +101,11 @@ interface UmiState {
 	 * @param {number} count - The maximum number of retries.
 	 */
 	setMaxRetries: (count: number) => void;
+	/**
+	 * Fetch and calculate priority fee for a transaction based on recent fees.
+	 * @param transaction - The TransactionBuilder to analyze
+	 */
+	getPriorityFee: (transaction: TransactionBuilder) => Promise<number>;
 }
 
 export enum Network {
@@ -339,6 +345,45 @@ const useUmiStore = create<UmiState>()((set, get) => ({
 	 */
 	setMaxRetries: (count: number) => {
 		set(() => ({ maxRetries: count }));
+	},
+	/**
+	 * Calculate average priority fee for a transaction by querying the RPC endpoint.
+	 */
+	getPriorityFee: async (transaction: TransactionBuilder): Promise<number> => {
+		const { umi } = get();
+		// Collect distinct writable keys
+		const keys = new Set<string>();
+		for (const item of transaction.items) {
+			for (const keyMeta of item.instruction.keys) {
+				if (keyMeta.isWritable) {
+					keys.add(keyMeta.pubkey.toString());
+				}
+			}
+		}
+		// RPC call to getRecentPrioritizationFees
+		const response = await fetch(umi.rpc.getEndpoint(), {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				jsonrpc: "2.0",
+				id: 1,
+				method: "getRecentPrioritizationFees",
+				params: [Array.from(keys)],
+			}),
+		});
+		if (!response.ok) {
+			throw new Error(`Failed to fetch priority fees: ${response.status}`);
+		}
+		const data = (await response.json()) as {
+			result: { prioritizationFee: number }[];
+		};
+		const fees = data.result?.map((e) => e.prioritizationFee) || [];
+		const topFees = fees.sort((a, b) => b - a).slice(0, 100);
+		if (topFees.length > 0) {
+			const sum = topFees.reduce((acc, fee) => acc + fee, 0);
+			return Math.ceil(sum / topFees.length);
+		}
+		return 0;
 	},
 }));
 
