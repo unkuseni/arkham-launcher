@@ -1,3 +1,6 @@
+import useUmiStore from "@/store/useUmiStore";
+import { createFungible } from "@metaplex-foundation/mpl-token-metadata";
+import { generateSigner, percentAmount } from "@metaplex-foundation/umi";
 import { z } from "zod";
 
 export const formSchema = z.object({
@@ -78,9 +81,25 @@ export const formSchema = z.object({
 			description: "Whether custom address is a prefix or suffix",
 		})
 		.default("prefix"),
+	revokeMint: z.boolean().optional().default(false),
+	revokeUpdate: z.boolean().optional().default(false),
+	revokeFreeze: z.boolean().optional().default(false),
 	// modify creator info
 	//custom address generator
 	// airdrop tokens
 	//dextool profile and banner
 	// dexscreener profile and banner
 });
+
+export const mintSPLTokens = async (metadataUri: string) => {
+	const { umi, signer } = useUmiStore.getState();
+	const mintSigner = generateSigner(umi);
+
+	const createMintIx = await createFungible(umi, {
+		mint: mintSigner,
+		name: "The Kitten Coin",
+		uri: metadataUri, // we use the `metadataUri` variable we created earlier that is storing our uri.
+		sellerFeeBasisPoints: percentAmount(0),
+		decimals: 9, // set the amount of decimals you want your token to have.
+	});
+};
