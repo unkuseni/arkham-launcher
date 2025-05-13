@@ -1,5 +1,5 @@
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import { randomUUIDv7 } from "bun";
+import { v4 as uuidV4 } from "uuid";
 
 const CLOUDFLARE_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID;
 const CLOUDFLARE_ACCESS_KEY_ID = process.env.CLOUDFLARE_ACCESS_KEY_ID;
@@ -54,7 +54,7 @@ export async function uploadImageToCloudflareR2(
 	try {
 		const arrayBuffer = await imageFile.arrayBuffer();
 		const fileExtension = imageFile.name.split(".").pop() || "png";
-		const uniqueFilename = `${randomUUIDv7()}.${fileExtension}`;
+		const uniqueFilename = `${uuidV4()}.${fileExtension}`;
 
 		await s3Client.send(
 			new PutObjectCommand({

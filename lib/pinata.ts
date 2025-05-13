@@ -19,10 +19,11 @@ export interface MetadataFile {
 }
 
 export interface MetadataProperties {
-	files: MetadataFile[];
-	category: string; // e.g., "image"
-	// You can add other properties like creators here if needed
-	// creators?: { address: string; share: number }[];
+	website?: string;
+	telegram?: string;
+	discord?: string;
+	twitter?: string;
+	reddit?: string;
 }
 
 export interface TokenMetadata {
@@ -31,9 +32,8 @@ export interface TokenMetadata {
 	description: string;
 	image: string; // URL to the image (e.g., from Cloudflare R2)
 	attributes?: Attribute[];
-	properties?: MetadataProperties;
+	extensions?: MetadataProperties;
 	seller_fee_basis_points?: number; // Optional: For royalties
-	// Add any other fields relevant to your metadata standard
 }
 
 export async function uploadMetadataToPinata(
