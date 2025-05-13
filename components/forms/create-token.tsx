@@ -1,8 +1,8 @@
 "use client";
-import { formSchema } from "@/lib/token/create-token";
+import { formSchema, mintSPLTokens } from "@/lib/token/create-token";
 import { zodResolver } from "@hookform/resolvers/zod";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import type { z } from "zod";
 import { Button } from "../ui/button";
@@ -67,7 +67,7 @@ const TokenForm = () => {
 			name: "",
 			ticker: "",
 			decimals: 9, // Default to a common value
-			supply: 1000000, // Default supply
+			supply: 1000000000, // Default supply
 			description: "",
 			image: undefined, // Changed from "" to undefined for File input
 			socialLinks: {
@@ -95,21 +95,7 @@ const TokenForm = () => {
 		name: "tags",
 	});
 
-	function onSubmit(values: z.infer<typeof formSchema>) {
-		// Do something with the form values.
-		// ✅ This will be type-safe and validated.
-		// Transform socialLinks and tags
-		const transformedValues = {
-			...values,
-			socialLinks: values.socialLinks,
-			tags: (values.tags ?? [])
-				.filter((tag) => tag.value && tag.value.trim() !== "")
-				.map((tag) => tag.value),
-		};
-		console.log(transformedValues);
-		// Here you would typically make an API call to your backend
-		// to create the token with the provided data.
-	}
+	function onSubmit(values: z.infer<typeof formSchema>) {}
 
 	return (
 		<>
@@ -169,6 +155,7 @@ const TokenForm = () => {
 											type="number"
 											placeholder="e.g. 9"
 											{...field}
+											value={9}
 											onChange={(e) =>
 												field.onChange(Number.parseInt(e.target.value, 10))
 											}
@@ -192,12 +179,35 @@ const TokenForm = () => {
 									</FormLabel>
 									<FormControl>
 										<Input
-											type="number"
-											placeholder="e.g. 1000000"
-											{...field}
-											onChange={(e) =>
-												field.onChange(Number.parseInt(e.target.value, 10))
+											type="text"
+											inputMode="numeric"
+											placeholder="e.g. 1,000,000,000"
+											value={
+												field.value === undefined ||
+												field.value === null ||
+												Number.isNaN(Number(field.value))
+													? ""
+													: Number(field.value).toLocaleString()
 											}
+											onChange={(e) => {
+												const inputValue = e.target.value;
+												// Remove all non-digit characters to get a clean number string
+												const numericString = inputValue.replace(/[^0-9]/g, "");
+
+												if (numericString === "") {
+													field.onChange(undefined); // Set to undefined if empty for validation (e.g. min(1))
+												} else {
+													const numberValue = Number.parseInt(
+														numericString,
+														10,
+													);
+													if (!Number.isNaN(numberValue)) {
+														field.onChange(numberValue);
+													} else {
+														field.onChange(undefined); // Set to undefined for validation (e.g. min(1))
+													}
+												}
+											}}
 										/>
 									</FormControl>
 									<FormDescription>
