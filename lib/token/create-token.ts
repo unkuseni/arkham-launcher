@@ -12,10 +12,7 @@ import {
 	publicKey,
 } from "@metaplex-foundation/umi";
 import { base58 } from "@metaplex-foundation/umi/serializers";
-import { TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
 import { z } from "zod";
-
-export const SPL_TOKEN_2022_PROGRAM_ID = publicKey(TOKEN_2022_PROGRAM_ID);
 
 export const formSchema = z.object({
 	name: z
@@ -108,15 +105,14 @@ export const formSchema = z.object({
 export const mintSPLTokens = async (mintinfo: {
 	name: string;
 	decimals: number;
-	printSupply: number;
+	totalSupply: number;
 	metadataUri: string;
 }) => {
-	const { umi, signer, getNetworkConfig } = useUmiStore.getState();
+	const { umi, signer } = useUmiStore.getState();
 	const mintSigner = generateSigner(umi);
-	const { name, decimals, printSupply, metadataUri } = mintinfo;
+	const { name, decimals, totalSupply, metadataUri } = mintinfo;
 
 	const createFungibleIx = createFungible(umi, {
-		splTokenProgram: SPL_TOKEN_2022_PROGRAM_ID,
 		mint: mintSigner,
 		authority: signer,
 		updateAuthority: signer,
@@ -125,7 +121,7 @@ export const mintSPLTokens = async (mintinfo: {
 		uri: metadataUri,
 		printSupply: {
 			__kind: "Limited",
-			fields: [printSupply],
+			fields: [totalSupply],
 		},
 		sellerFeeBasisPoints: percentAmount(0),
 	});
@@ -142,7 +138,7 @@ export const mintSPLTokens = async (mintinfo: {
 			mint: mintSigner.publicKey,
 			owner: umi.identity.publicKey,
 		}),
-		amount: BigInt(printSupply),
+		amount: BigInt(totalSupply),
 	});
 
 	const tx = await createFungibleIx
