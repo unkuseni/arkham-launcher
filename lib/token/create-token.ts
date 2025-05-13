@@ -1,7 +1,21 @@
 import useUmiStore from "@/store/useUmiStore";
 import { createFungible } from "@metaplex-foundation/mpl-token-metadata";
-import { generateSigner, percentAmount } from "@metaplex-foundation/umi";
+import {
+	createTokenIfMissing,
+	findAssociatedTokenPda,
+	getSplAssociatedTokenProgramId,
+	mintTokensTo,
+} from "@metaplex-foundation/mpl-toolbox";
+import {
+	generateSigner,
+	percentAmount,
+	publicKey,
+} from "@metaplex-foundation/umi";
+import { base58 } from "@metaplex-foundation/umi/serializers";
+import { TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
 import { z } from "zod";
+
+export const SPL_TOKEN_2022_PROGRAM_ID = publicKey(TOKEN_2022_PROGRAM_ID);
 
 export const formSchema = z.object({
 	name: z
@@ -91,15 +105,59 @@ export const formSchema = z.object({
 	// dexscreener profile and banner
 });
 
-export const mintSPLTokens = async (metadataUri: string) => {
-	const { umi, signer } = useUmiStore.getState();
+export const mintSPLTokens = async (mintinfo: {
+	name: string;
+	decimals: number;
+	printSupply: number;
+	metadataUri: string;
+}) => {
+	const { umi, signer, getNetworkConfig } = useUmiStore.getState();
 	const mintSigner = generateSigner(umi);
+	const { name, decimals, printSupply, metadataUri } = mintinfo;
 
-	const createMintIx = await createFungible(umi, {
+	const createFungibleIx = createFungible(umi, {
+		splTokenProgram: SPL_TOKEN_2022_PROGRAM_ID,
 		mint: mintSigner,
-		name: "The Kitten Coin",
-		uri: metadataUri, // we use the `metadataUri` variable we created earlier that is storing our uri.
+		authority: signer,
+		updateAuthority: signer,
+		name,
+		decimals,
+		uri: metadataUri,
+		printSupply: {
+			__kind: "Limited",
+			fields: [printSupply],
+		},
 		sellerFeeBasisPoints: percentAmount(0),
-		decimals: 9, // set the amount of decimals you want your token to have.
 	});
+
+	const createTokenIx = createTokenIfMissing(umi, {
+		mint: mintSigner.publicKey,
+		owner: umi.identity.publicKey,
+		ataProgram: getSplAssociatedTokenProgramId(umi),
+	});
+
+	const mintTokensIx = mintTokensTo(umi, {
+		mint: mintSigner.publicKey,
+		token: findAssociatedTokenPda(umi, {
+			mint: mintSigner.publicKey,
+			owner: umi.identity.publicKey,
+		}),
+		amount: BigInt(printSupply),
+	});
+
+	const tx = await createFungibleIx
+		.add(createTokenIx)
+		.add(mintTokensIx)
+		.sendAndConfirm(umi);
+
+	const signature = base58.deserialize(tx.signature)[0];
+	console.log("\nTransaction Complete");
+	console.log("View Transaction on Solana Explorer");
+	console.log(`https://explorer.solana.com/tx/${signature}?cluster=devnet`);
+	console.log("View Token on Solana Explorer");
+	console.log(
+		`https://explorer.solana.com/address/${mintSigner.publicKey}?cluster=devnet`,
+	);
+
+	return signature;
 };

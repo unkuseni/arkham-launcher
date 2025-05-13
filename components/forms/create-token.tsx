@@ -1,6 +1,5 @@
 "use client";
 import { formSchema } from "@/lib/token/create-token";
-import useUmiStore, { Network } from "@/store/useUmiStore";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { useState } from "react";
