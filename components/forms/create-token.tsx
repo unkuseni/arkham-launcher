@@ -2,6 +2,8 @@
 import { formSchema, mintSPLTokens } from "@/lib/token/create-token";
 import { zodResolver } from "@hookform/resolvers/zod";
 
+import { uploadMetadataToPinata } from "@/lib/pinata";
+import { uploadImageToCloudflareR2 } from "@/lib/s3-bucket";
 import { useCallback, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import type { z } from "zod";
@@ -26,6 +28,7 @@ import {
 } from "../ui/form";
 import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
+import TokenSuccessModal, { TokenDetails } from "@/components/cards/token-success-modal";
 
 const CreateToken = () => {
 	return (
@@ -60,16 +63,18 @@ const TokenForm = () => {
 	const [imagePreview, setImagePreview] = useState<string | null>(null);
 	const [showSocialLinks, setShowSocialLinks] = useState(false);
 	const [showTags, setShowTags] = useState(false);
+	const [isModalOpen, setIsModalOpen] = useState(false);
+	const [createdTokenDetails, setCreatedTokenDetails] = useState<TokenDetails | null>(null);
 
 	const form = useForm({
 		resolver: zodResolver(formSchema),
 		defaultValues: {
 			name: "",
 			ticker: "",
-			decimals: 9, // Default to a common value
-			supply: 1000000000, // Default supply
+			decimals: 9,
+			supply: 1000000000,
 			description: "",
-			image: undefined, // Changed from "" to undefined for File input
+			image: undefined,
 			socialLinks: {
 				website: "",
 				telegram: "",
@@ -77,9 +82,9 @@ const TokenForm = () => {
 				twitter: "",
 				reddit: "",
 			},
-			tags: [], // Updated to empty array for optional field
+			tags: [],
 			customAddress: "",
-			customAddressPosition: "prefix", // Default value for the new field
+			customAddressPosition: "prefix",
 			revokeMint: false,
 			revokeUpdate: false,
 			revokeFreeze: false,
@@ -95,7 +100,77 @@ const TokenForm = () => {
 		name: "tags",
 	});
 
-	function onSubmit(values: z.infer<typeof formSchema>) {}
+	async function onSubmit(values: z.infer<typeof formSchema>) {
+		const { name, ticker, image, description, supply, socialLinks, decimals } =
+			values;
+
+		let uploadedImageUrl: string | null = null;
+		if (image instanceof File) {
+			uploadedImageUrl = await uploadImageToCloudflareR2(image);
+			if (!uploadedImageUrl) {
+				console.error("Error uploading image to Cloudflare R2. Proceeding without image.");
+			}
+		}
+
+		const token_metadata = {
+			name: name,
+			symbol: ticker,
+			description: description,
+			image: uploadedImageUrl || "",
+			extensions: socialLinks,
+		};
+
+		const pinataUrl = await uploadMetadataToPinata(token_metadata);
+
+		if (!pinataUrl) {
+			console.error("Error uploading metadata to Pinata");
+			form.setError("root", { type: "manual", message: "Failed to upload metadata to Pinata." });
+			return;
+		}
+
+		try {
+			const mintInfo = {
+				name,
+				decimals,
+				totalSupply: supply,
+				metadataUri: pinataUrl,
+			};
+		const txResult = 	await mintSPLTokens(mintInfo);
+
+			setCreatedTokenDetails({
+				name,
+				ticker,
+				decimals,
+				supply,
+				description,
+				imageUrl: uploadedImageUrl || undefined,
+				pinataUrl,
+				txResult
+			});
+			setIsModalOpen(true);
+			form.reset();
+			setImagePreview(null);
+			setShowSocialLinks(false);
+			setShowTags(false);
+		} catch (error: any) {
+			console.error("Error minting SPL token:", error);
+			form.setError("root", { type: "manual", message: error.message || "Failed to mint token." });
+		}
+	}
+
+	const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files ? e.target.files[0] : undefined;
+		form.setValue("image", file, { shouldValidate: true });
+		if (file) {
+			const reader = new FileReader();
+			reader.onloadend = () => {
+				setImagePreview(reader.result as string);
+			};
+			reader.readAsDataURL(file);
+		} else {
+			setImagePreview(null);
+		}
+	};
 
 	return (
 		<>
@@ -155,10 +230,11 @@ const TokenForm = () => {
 											type="number"
 											placeholder="e.g. 9"
 											{...field}
-											value={9}
-											onChange={(e) =>
-												field.onChange(Number.parseInt(e.target.value, 10))
-											}
+											value={field.value ?? 9}
+											onChange={(e) => {
+												const val = e.target.value;
+												field.onChange(val === "" ? undefined : Number.parseInt(val, 10));
+											}}
 										/>
 									</FormControl>
 									<FormDescription>
@@ -191,11 +267,10 @@ const TokenForm = () => {
 											}
 											onChange={(e) => {
 												const inputValue = e.target.value;
-												// Remove all non-digit characters to get a clean number string
 												const numericString = inputValue.replace(/[^0-9]/g, "");
 
 												if (numericString === "") {
-													field.onChange(undefined); // Set to undefined if empty for validation (e.g. min(1))
+													field.onChange(undefined);
 												} else {
 													const numberValue = Number.parseInt(
 														numericString,
@@ -203,8 +278,6 @@ const TokenForm = () => {
 													);
 													if (!Number.isNaN(numberValue)) {
 														field.onChange(numberValue);
-													} else {
-														field.onChange(undefined); // Set to undefined for validation (e.g. min(1))
 													}
 												}
 											}}
@@ -270,21 +343,7 @@ const TokenForm = () => {
 											<Input
 												type="file"
 												accept="image/jpeg,image/png,image/webp,image/gif"
-												onChange={(e) => {
-													const file = e.target.files
-														? e.target.files[0]
-														: undefined;
-													field.onChange(file); // Inform react-hook-form
-													if (file) {
-														const reader = new FileReader();
-														reader.onloadend = () => {
-															setImagePreview(reader.result as string);
-														};
-														reader.readAsDataURL(file);
-													} else {
-														setImagePreview(null);
-													}
-												}}
+												onChange={handleImageChange}
 												className="sr-only"
 												id="tokenImageUpload"
 											/>
@@ -305,7 +364,6 @@ const TokenForm = () => {
 						/>
 					</div>
 
-					{/* Social Links Section */}
 					<div className="space-y-2">
 						<Button
 							type="button"
@@ -399,7 +457,6 @@ const TokenForm = () => {
 						)}
 					</div>
 
-					{/* Tags Section */}
 					<div className="space-y-2">
 						<Button
 							type="button"
@@ -564,9 +621,21 @@ const TokenForm = () => {
 						</div>
 					</div>
 
-					<Button type="submit">Create Token</Button>
+					{form.formState.errors.root && (
+						<FormMessage>{form.formState.errors.root.message}</FormMessage>
+					)}
+					<Button type="submit" disabled={form.formState.isSubmitting} className="w-full md:w-auto">
+						{form.formState.isSubmitting ? "Creating Token..." : "Create Token"}
+					</Button>
 				</form>
 			</Form>
+			{createdTokenDetails && (
+				<TokenSuccessModal
+					isOpen={isModalOpen}
+					onClose={() => setIsModalOpen(false)}
+					tokenDetails={createdTokenDetails}
+				/>
+			)}
 		</>
 	);
 };
