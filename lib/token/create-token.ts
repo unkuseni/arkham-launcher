@@ -104,12 +104,11 @@ export const mintSPLTokens = async (mintinfo: {
 	supply: number;
 	metadataUri: string;
 }) => {
-	const { umi, signer, setNetwork } = useUmiStore.getState();
+	const { umi, signer } = useUmiStore.getState();
 	if (!signer) {
 		throw new Error("No wallet connected. Please connect your wallet first.");
 	}
 	umi.use(signerIdentity(signer));
-	setNetwork(Network.DEVNET);
 	const mintSigner = generateSigner(umi);
 	const { name, decimals, supply, metadataUri } = mintinfo;
 
