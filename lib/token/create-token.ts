@@ -6,11 +6,7 @@ import {
 	getSplAssociatedTokenProgramId,
 	mintTokensTo,
 } from "@metaplex-foundation/mpl-toolbox";
-import {
-	generateSigner,
-	percentAmount,
-	publicKey,
-} from "@metaplex-foundation/umi";
+import { generateSigner, percentAmount } from "@metaplex-foundation/umi";
 import { base58 } from "@metaplex-foundation/umi/serializers";
 import { z } from "zod";
 
@@ -112,6 +108,7 @@ export const mintSPLTokens = async (mintinfo: {
 	const mintSigner = generateSigner(umi);
 	const { name, decimals, totalSupply, metadataUri } = mintinfo;
 
+	const mintAddress = mintSigner.publicKey;
 	const createFungibleIx = createFungible(umi, {
 		mint: mintSigner,
 		authority: signer,
@@ -127,17 +124,20 @@ export const mintSPLTokens = async (mintinfo: {
 	});
 
 	const createTokenIx = createTokenIfMissing(umi, {
-		mint: mintSigner.publicKey,
+		mint: mintAddress,
 		owner: umi.identity.publicKey,
 		ataProgram: getSplAssociatedTokenProgramId(umi),
 	});
 
+	// Get the Associated Token Account (ATA) address
+	const associatedTokenAccount = findAssociatedTokenPda(umi, {
+		mint: mintAddress,
+		owner: umi.identity.publicKey,
+	});
+
 	const mintTokensIx = mintTokensTo(umi, {
 		mint: mintSigner.publicKey,
-		token: findAssociatedTokenPda(umi, {
-			mint: mintSigner.publicKey,
-			owner: umi.identity.publicKey,
-		}),
+		token: associatedTokenAccount,
 		amount: BigInt(totalSupply),
 	});
 
@@ -152,8 +152,16 @@ export const mintSPLTokens = async (mintinfo: {
 	console.log(`https://explorer.solana.com/tx/${signature}?cluster=devnet`);
 	console.log("View Token on Solana Explorer");
 	console.log(
-		`https://explorer.solana.com/address/${mintSigner.publicKey}?cluster=devnet`,
+		`https://explorer.solana.com/address/${mintAddress}?cluster=devnet`, // Use mintAddress
+	);
+	console.log("View Token Account on Solana Explorer");
+	console.log(
+		`https://explorer.solana.com/address/${associatedTokenAccount}?cluster=devnet`, // Log the ATA
 	);
 
-	return signature;
+	return {
+		signature,
+		mintAddress: mintAddress.toString(),
+		tokenAddress: associatedTokenAccount.toString(),
+	};
 };
