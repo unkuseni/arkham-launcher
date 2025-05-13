@@ -39,44 +39,25 @@ export interface TokenMetadata {
 export async function uploadMetadataToPinata(
 	metadata: TokenMetadata,
 ): Promise<string | null> {
-	if (!PINATA_API_KEY || !PINATA_SECRET_API_KEY) {
-		console.error(
-			"Pinata API keys are not configured. Cannot upload metadata.",
-		);
-		return null;
-	}
-
-	const url = "https://api.pinata.cloud/pinning/pinJSONToIPFS";
-
+	// Call internal API route to handle Pinata upload
 	try {
-		const response = await fetch(url, {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-				pinata_api_key: PINATA_API_KEY,
-				pinata_secret_api_key: PINATA_SECRET_API_KEY,
-			},
-			body: JSON.stringify({
-				pinataContent: metadata,
-				pinataOptions: {
-					cidVersion: 1, // Use CID version 1 for wider compatibility
-				},
-			}),
+		const response = await fetch('/api/pinata/pinJSON', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(metadata),
 		});
 
 		if (!response.ok) {
-			const errorData = await response.json();
-			console.error(
-				"Error uploading JSON to Pinata:",
-				response.status,
-				errorData,
-			);
+			const errorData = await response.json().catch(() => null);
+			console.error('Error uploading JSON via internal API:', response.status, errorData);
 			return null;
 		}
 
 		const result = await response.json();
-		console.log("Metadata uploaded to Pinata. IPFS Hash:", result.IpfsHash);
-		return result.IpfsHash;
+		const hash = result.IpfsHash;
+		console.log('Metadata uploaded via internal API. IPFS Hash:', hash);
+		// Return gateway URL
+		return `https://gateway.pinata.cloud/ipfs/${hash}`;
 	} catch (error) {
 		console.error("Error in uploadMetadataToPinata:", error);
 		return null;
