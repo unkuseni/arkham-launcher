@@ -1,4 +1,4 @@
-import useUmiStore from "@/store/useUmiStore";
+import useUmiStore, { Network } from "@/store/useUmiStore";
 import { createFungible } from "@metaplex-foundation/mpl-token-metadata";
 import {
 	createTokenIfMissing,
@@ -6,7 +6,7 @@ import {
 	getSplAssociatedTokenProgramId,
 	mintTokensTo,
 } from "@metaplex-foundation/mpl-toolbox";
-import { generateSigner, percentAmount } from "@metaplex-foundation/umi";
+import { generateSigner, percentAmount, signerIdentity } from "@metaplex-foundation/umi";
 import { base58 } from "@metaplex-foundation/umi/serializers";
 import { z } from "zod";
 
@@ -87,7 +87,7 @@ export const formSchema = z.object({
 		.enum(["prefix", "suffix"], {
 			description: "Whether custom address is a prefix or suffix",
 		})
-		.default("prefix"),
+		.default("prefix").optional(),
 	revokeMint: z.boolean().optional().default(false),
 	revokeUpdate: z.boolean().optional().default(false),
 	revokeFreeze: z.boolean().optional().default(false),
@@ -101,12 +101,17 @@ export const formSchema = z.object({
 export const mintSPLTokens = async (mintinfo: {
 	name: string;
 	decimals: number;
-	totalSupply: number;
+	supply: number;
 	metadataUri: string;
 }) => {
-	const { umi, signer } = useUmiStore.getState();
+	const { umi, signer, setNetwork } = useUmiStore.getState();
+	if (!signer) {
+		throw new Error("No wallet connected. Please connect your wallet first.");
+	}
+	umi.use(signerIdentity(signer));
+	setNetwork(Network.DEVNET);
 	const mintSigner = generateSigner(umi);
-	const { name, decimals, totalSupply, metadataUri } = mintinfo;
+	const { name, decimals, supply, metadataUri } = mintinfo;
 
 	const mintAddress = mintSigner.publicKey;
 	const createFungibleIx = createFungible(umi, {
@@ -118,7 +123,7 @@ export const mintSPLTokens = async (mintinfo: {
 		uri: metadataUri,
 		printSupply: {
 			__kind: "Limited",
-			fields: [totalSupply],
+			fields: [supply],
 		},
 		sellerFeeBasisPoints: percentAmount(0),
 	});
@@ -138,7 +143,7 @@ export const mintSPLTokens = async (mintinfo: {
 	const mintTokensIx = mintTokensTo(umi, {
 		mint: mintSigner.publicKey,
 		token: associatedTokenAccount,
-		amount: BigInt(totalSupply),
+		amount: BigInt(supply * 10 ** decimals),
 	});
 
 	const tx = await createFungibleIx

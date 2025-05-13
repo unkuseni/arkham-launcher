@@ -2,7 +2,6 @@
 import { formSchema, mintSPLTokens } from "@/lib/token/create-token";
 import { zodResolver } from "@hookform/resolvers/zod";
 
-import { uploadMetadataToPinata } from "@/lib/pinata";
 import { uploadImageToCloudflareR2 } from "@/lib/s3-bucket";
 import { useCallback, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
@@ -61,6 +60,8 @@ export default CreateToken;
 
 const TokenForm = () => {
 	const [imagePreview, setImagePreview] = useState<string | null>(null);
+	// URL returned from R2 upload
+	const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
 	const [showSocialLinks, setShowSocialLinks] = useState(false);
 	const [showTags, setShowTags] = useState(false);
 	const [isModalOpen, setIsModalOpen] = useState(false);
@@ -101,42 +102,41 @@ const TokenForm = () => {
 	});
 
 	async function onSubmit(values: z.infer<typeof formSchema>) {
-		const { name, ticker, image, description, supply, socialLinks, decimals } =
-			values;
-
-		let uploadedImageUrl: string | null = null;
-		if (image instanceof File) {
-			uploadedImageUrl = await uploadImageToCloudflareR2(image);
-			if (!uploadedImageUrl) {
-				console.error("Error uploading image to Cloudflare R2. Proceeding without image.");
-			}
-		}
-
-		const token_metadata = {
-			name: name,
-			symbol: ticker,
-			description: description,
-			image: uploadedImageUrl || "",
-			extensions: socialLinks,
-		};
-
-		const pinataUrl = await uploadMetadataToPinata(token_metadata);
-
-		if (!pinataUrl) {
-			console.error("Error uploading metadata to Pinata");
-			form.setError("root", { type: "manual", message: "Failed to upload metadata to Pinata." });
-			return;
-		}
-
 		try {
-			const mintInfo = {
-				name,
-				decimals,
-				totalSupply: supply,
-				metadataUri: pinataUrl,
-			};
-		const txResult = 	await mintSPLTokens(mintInfo);
+			const { name, ticker, image, description, supply, socialLinks, decimals } = values;
 
+			 // Image URL should have been set on selection
+			const imageUrl = uploadedImageUrl;
+
+			// Prepare metadata
+			const token_metadata = {
+				name,
+				symbol: ticker,
+				description,
+				image: imageUrl || '',
+				extensions: socialLinks,
+			};
+
+			// Upload metadata to Pinata via internal API
+			const response = await fetch('/api/pinata/pinJSON', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(token_metadata),
+			});
+			const data = await response.json();
+			if (!response.ok || !data.IpfsHash) {
+				console.error('Metadata upload error:', data.error || data);
+				form.setError('root', { type: 'manual', message: 'Failed to upload metadata.' });
+				return;
+			}
+			console.log('Metadata uploaded. IPFS Hash:', data.IpfsHash);
+			const metadataUri = `https://gateway.pinata.cloud/ipfs/${data.IpfsHash}`;
+
+			// Mint the token
+			const mintInfo = { name, decimals,  supply, metadataUri };
+			const txResult = await mintSPLTokens(mintInfo);
+
+			// Show success modal
 			setCreatedTokenDetails({
 				name,
 				ticker,
@@ -144,31 +144,36 @@ const TokenForm = () => {
 				supply,
 				description,
 				imageUrl: uploadedImageUrl || undefined,
-				pinataUrl,
-				txResult
+				pinataUrl: metadataUri,
+				txResult,
 			});
 			setIsModalOpen(true);
 			form.reset();
 			setImagePreview(null);
+			setUploadedImageUrl(null);
 			setShowSocialLinks(false);
 			setShowTags(false);
-		} catch (error: any) {
-			console.error("Error minting SPL token:", error);
-			form.setError("root", { type: "manual", message: error.message || "Failed to mint token." });
+		} catch (err: any) {
+			console.error('Token creation error:', err);
+			form.setError('root', { type: 'manual', message: err.message || 'Failed to create token.' });
 		}
 	}
 
-	const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+	const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files ? e.target.files[0] : undefined;
 		form.setValue("image", file, { shouldValidate: true });
 		if (file) {
+			// show local preview
 			const reader = new FileReader();
-			reader.onloadend = () => {
-				setImagePreview(reader.result as string);
-			};
+			reader.onloadend = () => setImagePreview(reader.result as string);
 			reader.readAsDataURL(file);
+			// upload to R2
+			const url = await uploadImageToCloudflareR2(file);
+			console.log('Uploaded image URL:', url);
+			if (url) setUploadedImageUrl(url);
 		} else {
 			setImagePreview(null);
+			setUploadedImageUrl(null);
 		}
 	};
 
