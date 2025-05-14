@@ -148,7 +148,8 @@ export type NetworkConfig = {
 const NETWORK_CONFIGS: Record<Network, NetworkConfig> = {
 	[Network.MAINNET]: {
 		name: Network.MAINNET,
-		endpoint: "https://api.mainnet-beta.solana.com",
+		endpoint:
+			"https://mainnet.helius-rpc.com/?api-key=7249b645-b969-4853-aa40-f440ee4a5762",
 		websocket: "wss://api.mainnet-beta.solana.com",
 	},
 	[Network.DEVNET]: {
