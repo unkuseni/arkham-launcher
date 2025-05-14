@@ -117,7 +117,6 @@ export const createSPLTokens = async (mintinfo: {
 	if (!signer) {
 		throw new Error("No wallet connected. Please connect your wallet first.");
 	}
-	umi.use(signerIdentity(signer));
 	const mintSigner = generateSigner(umi);
 	const { name, decimals, supply, metadataUri } = mintinfo;
 
