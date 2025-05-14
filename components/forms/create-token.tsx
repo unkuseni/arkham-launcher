@@ -87,7 +87,7 @@ const TokenForm = () => {
 				reddit: "",
 			},
 			tags: [],
-			customAddress: "",
+			customAddress: undefined,
 			customAddressPosition: "prefix",
 			revokeMint: false,
 			revokeUpdate: false,
@@ -106,15 +106,8 @@ const TokenForm = () => {
 
 	async function onSubmit(values: z.infer<typeof formSchema>) {
 		try {
-			const {
-				name,
-				ticker,
-				image,
-				description,
-				supply,
-				socialLinks,
-				decimals,
-			} = values;
+			const { name, ticker, description, supply, socialLinks, decimals } =
+				values;
 
 			// Image URL should have been set on selection
 			const imageUrl = uploadedImageUrl;

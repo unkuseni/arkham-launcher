@@ -10,11 +10,7 @@ import {
 	getSplAssociatedTokenProgramId,
 	mintTokensTo,
 } from "@metaplex-foundation/mpl-toolbox";
-import {
-	generateSigner,
-	percentAmount,
-	signerIdentity,
-} from "@metaplex-foundation/umi";
+import { generateSigner, percentAmount } from "@metaplex-foundation/umi";
 import { base58 } from "@metaplex-foundation/umi/serializers";
 import { z } from "zod";
 
