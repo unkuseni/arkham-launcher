@@ -1,12 +1,20 @@
-import useUmiStore, { Network } from "@/store/useUmiStore";
-import { createFungible } from "@metaplex-foundation/mpl-token-metadata";
+import useUmiStore from "@/store/useUmiStore";
 import {
+	TokenStandard,
+	createV1,
+} from "@metaplex-foundation/mpl-token-metadata";
+import {
+	SPL_TOKEN_PROGRAM_ID,
 	createTokenIfMissing,
 	findAssociatedTokenPda,
 	getSplAssociatedTokenProgramId,
 	mintTokensTo,
 } from "@metaplex-foundation/mpl-toolbox";
-import { generateSigner, percentAmount, signerIdentity } from "@metaplex-foundation/umi";
+import {
+	generateSigner,
+	percentAmount,
+	signerIdentity,
+} from "@metaplex-foundation/umi";
 import { base58 } from "@metaplex-foundation/umi/serializers";
 import { z } from "zod";
 
@@ -87,7 +95,8 @@ export const formSchema = z.object({
 		.enum(["prefix", "suffix"], {
 			description: "Whether custom address is a prefix or suffix",
 		})
-		.default("prefix").optional(),
+		.default("prefix")
+		.optional(),
 	revokeMint: z.boolean().optional().default(false),
 	revokeUpdate: z.boolean().optional().default(false),
 	revokeFreeze: z.boolean().optional().default(false),
@@ -113,7 +122,7 @@ export const mintSPLTokens = async (mintinfo: {
 	const { name, decimals, supply, metadataUri } = mintinfo;
 
 	const mintAddress = mintSigner.publicKey;
-	const createFungibleIx = createFungible(umi, {
+	const createFungibleIx = createV1(umi, {
 		mint: mintSigner,
 		authority: signer,
 		updateAuthority: signer,
@@ -125,6 +134,8 @@ export const mintSPLTokens = async (mintinfo: {
 			fields: [supply],
 		},
 		sellerFeeBasisPoints: percentAmount(0),
+		tokenStandard: TokenStandard.Fungible,
+		splTokenProgram: SPL_TOKEN_PROGRAM_ID,
 	});
 
 	const createTokenIx = createTokenIfMissing(umi, {
