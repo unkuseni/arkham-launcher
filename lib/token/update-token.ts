@@ -1,7 +1,6 @@
 import useUmiStore from "@/store/useUmiStore";
 import {
 	fetchMetadataFromSeeds,
-	findMetadataPda,
 	updateV1,
 } from "@metaplex-foundation/mpl-token-metadata";
 import { publicKey } from "@metaplex-foundation/umi";
@@ -37,7 +36,6 @@ export const updateTokenMetadata = async (
 		symbol,
 		uri,
 		sellerFeeBasisPoints,
-		mintAuthority,
 		updateAuthority,
 		isMutable,
 		primarySaleHappened,
