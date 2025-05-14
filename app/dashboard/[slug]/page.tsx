@@ -1,4 +1,10 @@
+import BurnTokens from "@/components/forms/burn-token";
 import CreateToken from "@/components/forms/create-token";
+import DelegateTokens from "@/components/forms/delegate-token";
+import FreezeToken from "@/components/forms/freeze-token";
+import MintTokens from "@/components/forms/mint-token";
+import TransferTokens from "@/components/forms/transfer-token";
+import UpdateToken from "@/components/forms/update-token";
 import type { ReactNode } from "react";
 
 export default async function Page({
@@ -13,17 +19,17 @@ export default async function Page({
 	if (slug === "create-token") {
 		content = <CreateToken />;
 	} else if (slug === "mint-token") {
-		content = <div>Mint Token</div>;
+		content = <MintTokens />;
 	} else if (slug === "transfer-token") {
-		content = <div>Transfer Token</div>;
+		content = <TransferTokens />;
 	} else if (slug === "delegate-token") {
-		content = <div>Delegate Token</div>;
+		content = <DelegateTokens />;
 	} else if (slug === "update-token") {
-		content = <div>Update Token</div>;
+		content = <UpdateToken />;
 	} else if (slug === "burn-token") {
-		content = <div>Burn Token</div>;
+		content = <BurnTokens />;
 	} else if (slug === "freeze-token") {
-		content = <div>Freeze Token</div>;
+		content = <FreezeToken />;
 	}
 	return (
 		<>

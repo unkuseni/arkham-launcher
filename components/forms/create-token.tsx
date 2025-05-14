@@ -1,5 +1,5 @@
 "use client";
-import { formSchema, mintSPLTokens } from "@/lib/token/create-token";
+import { createSPLTokens, formSchema } from "@/lib/token/create-token";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import TokenSuccessModal, {
@@ -148,7 +148,7 @@ const TokenForm = () => {
 
 			// Mint the token
 			const mintInfo = { name, decimals, supply, metadataUri };
-			const txResult = await mintSPLTokens(mintInfo);
+			const txResult = await createSPLTokens(mintInfo);
 
 			// Show success modal
 			setCreatedTokenDetails({

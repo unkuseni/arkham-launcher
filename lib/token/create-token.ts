@@ -107,7 +107,7 @@ export const formSchema = z.object({
 	// dexscreener profile and banner
 });
 
-export const mintSPLTokens = async (mintinfo: {
+export const createSPLTokens = async (mintinfo: {
 	name: string;
 	decimals: number;
 	supply: number;
