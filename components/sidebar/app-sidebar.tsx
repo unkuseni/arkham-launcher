@@ -1,5 +1,4 @@
 "use client";
-import { url } from "inspector";
 import { Coins, House } from "lucide-react";
 import {
 	Sidebar,
@@ -34,12 +33,20 @@ const data = [
 				url: "mint-token",
 			},
 			{
-				title: "Burn a Token",
-				url: "burn-token",
-			},
-			{
 				title: "Update a Token",
 				url: "update-token",
+			},
+			{
+				title: "Transfer a Token",
+				url: "transfer-token",
+			},
+			{
+				title: "Delegate a Token",
+				url: "delegate-token",
+			},
+			{
+				title: "Burn a Token",
+				url: "burn-token",
 			},
 			{
 				title: "Freeze a Token",
