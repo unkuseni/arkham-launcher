@@ -2,6 +2,9 @@
 import { formSchema, mintSPLTokens } from "@/lib/token/create-token";
 import { zodResolver } from "@hookform/resolvers/zod";
 
+import TokenSuccessModal, {
+	type TokenDetails,
+} from "@/components/cards/token-success-modal";
 import { uploadImageToCloudflareR2 } from "@/lib/s3-bucket";
 import { useCallback, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
@@ -27,7 +30,6 @@ import {
 } from "../ui/form";
 import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
-import TokenSuccessModal, { TokenDetails } from "@/components/cards/token-success-modal";
 
 const CreateToken = () => {
 	return (
@@ -65,7 +67,8 @@ const TokenForm = () => {
 	const [showSocialLinks, setShowSocialLinks] = useState(false);
 	const [showTags, setShowTags] = useState(false);
 	const [isModalOpen, setIsModalOpen] = useState(false);
-	const [createdTokenDetails, setCreatedTokenDetails] = useState<TokenDetails | null>(null);
+	const [createdTokenDetails, setCreatedTokenDetails] =
+		useState<TokenDetails | null>(null);
 
 	const form = useForm({
 		resolver: zodResolver(formSchema),
@@ -103,9 +106,17 @@ const TokenForm = () => {
 
 	async function onSubmit(values: z.infer<typeof formSchema>) {
 		try {
-			const { name, ticker, image, description, supply, socialLinks, decimals } = values;
+			const {
+				name,
+				ticker,
+				image,
+				description,
+				supply,
+				socialLinks,
+				decimals,
+			} = values;
 
-			 // Image URL should have been set on selection
+			// Image URL should have been set on selection
 			const imageUrl = uploadedImageUrl;
 
 			// Prepare metadata
@@ -113,27 +124,30 @@ const TokenForm = () => {
 				name,
 				symbol: ticker,
 				description,
-				image: imageUrl || '',
+				image: imageUrl || "",
 				extensions: socialLinks,
 			};
 
 			// Upload metadata to Pinata via internal API
-			const response = await fetch('/api/pinata/pinJSON', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
+			const response = await fetch("/api/pinata/pinJSON", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify(token_metadata),
 			});
 			const data = await response.json();
 			if (!response.ok || !data.IpfsHash) {
-				console.error('Metadata upload error:', data.error || data);
-				form.setError('root', { type: 'manual', message: 'Failed to upload metadata.' });
+				console.error("Metadata upload error:", data.error || data);
+				form.setError("root", {
+					type: "manual",
+					message: "Failed to upload metadata.",
+				});
 				return;
 			}
-			console.log('Metadata uploaded. IPFS Hash:', data.IpfsHash);
+			console.log("Metadata uploaded. IPFS Hash:", data.IpfsHash);
 			const metadataUri = `https://gateway.pinata.cloud/ipfs/${data.IpfsHash}`;
 
 			// Mint the token
-			const mintInfo = { name, decimals,  supply, metadataUri };
+			const mintInfo = { name, decimals, supply, metadataUri };
 			const txResult = await mintSPLTokens(mintInfo);
 
 			// Show success modal
@@ -154,8 +168,11 @@ const TokenForm = () => {
 			setShowSocialLinks(false);
 			setShowTags(false);
 		} catch (err: any) {
-			console.error('Token creation error:', err);
-			form.setError('root', { type: 'manual', message: err.message || 'Failed to create token.' });
+			console.error("Token creation error:", err);
+			form.setError("root", {
+				type: "manual",
+				message: err.message || "Failed to create token.",
+			});
 		}
 	}
 
@@ -169,7 +186,7 @@ const TokenForm = () => {
 			reader.readAsDataURL(file);
 			// upload to R2
 			const url = await uploadImageToCloudflareR2(file);
-			console.log('Uploaded image URL:', url);
+			console.log("Uploaded image URL:", url);
 			if (url) setUploadedImageUrl(url);
 		} else {
 			setImagePreview(null);
@@ -238,7 +255,9 @@ const TokenForm = () => {
 											value={field.value ?? 9}
 											onChange={(e) => {
 												const val = e.target.value;
-												field.onChange(val === "" ? undefined : Number.parseInt(val, 10));
+												field.onChange(
+													val === "" ? undefined : Number.parseInt(val, 10),
+												);
 											}}
 										/>
 									</FormControl>
@@ -629,7 +648,11 @@ const TokenForm = () => {
 					{form.formState.errors.root && (
 						<FormMessage>{form.formState.errors.root.message}</FormMessage>
 					)}
-					<Button type="submit" disabled={form.formState.isSubmitting} className="w-full md:w-auto">
+					<Button
+						type="submit"
+						disabled={form.formState.isSubmitting}
+						className="w-full md:w-auto"
+					>
 						{form.formState.isSubmitting ? "Creating Token..." : "Create Token"}
 					</Button>
 				</form>

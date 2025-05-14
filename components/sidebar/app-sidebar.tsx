@@ -1,4 +1,5 @@
 "use client";
+import { url } from "inspector";
 import { Coins, House } from "lucide-react";
 import {
 	Sidebar,
@@ -27,6 +28,22 @@ const data = [
 			{
 				title: "Create a Token",
 				url: "create-token",
+			},
+			{
+				title: "Mint a Token",
+				url: "mint-token",
+			},
+			{
+				title: "Burn a Token",
+				url: "burn-token",
+			},
+			{
+				title: "Update a Token",
+				url: "update-token",
+			},
+			{
+				title: "Freeze a Token",
+				url: "freeze-token",
 			},
 		],
 	},
