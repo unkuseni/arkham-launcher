@@ -126,6 +126,7 @@ export const mintSPLTokens = async (mintinfo: {
 		mint: mintSigner,
 		authority: signer,
 		updateAuthority: signer,
+		isMutable: true,
 		name,
 		decimals,
 		uri: metadataUri,
