@@ -6,7 +6,7 @@ import TokenSuccessModal, {
 	type TokenDetails,
 } from "@/components/cards/token-success-modal";
 import { uploadImageToCloudflareR2 } from "@/lib/s3-bucket";
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import type { z } from "zod";
 import { Button } from "../ui/button";
