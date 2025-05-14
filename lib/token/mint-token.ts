@@ -11,7 +11,7 @@ import { base58 } from "@metaplex-foundation/umi/serializers";
 export const mintSPLTokens = async (
 	mintAddress: string,
 	amount: number,
-	ownerAddress: string,
+	ownerAddress?: string,
 ) => {
 	const { umi, signer } = useUmiStore.getState();
 	if (!signer) {
@@ -20,7 +20,7 @@ export const mintSPLTokens = async (
 
 	// Token mint public key
 	const mint = publicKey(mintAddress);
-	const owner = publicKey(ownerAddress);
+	const owner = ownerAddress ? publicKey(ownerAddress) : signer.publicKey;
 
 	// Derive Associated Token Account (ATA)
 	const ata = findAssociatedTokenPda(umi, { mint, owner: signer.publicKey });
