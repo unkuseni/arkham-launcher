@@ -108,9 +108,7 @@ export const SidebarMain = ({ links = data }: SidebarMainProps) => {
 														className="font-inter"
 														isActive={currentPath === subItem.url}
 													>
-														<Link
-															href={`/dashboard/${item.url}/${subItem.url}`}
-														>
+														<Link href={`/dashboard/${subItem.url}`}>
 															{subItem.title}
 														</Link>
 													</SidebarMenuSubButton>

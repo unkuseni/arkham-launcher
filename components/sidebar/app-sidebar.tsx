@@ -20,10 +20,15 @@ const data = [
 	},
 	{
 		label: "Launchpad",
-		title: "Create a token",
+		title: "Token Management",
 		url: "create-token",
 		icon: Coins,
-		items: [],
+		items: [
+			{
+				title: "Create a Token",
+				url: "create-token",
+			},
+		],
 	},
 ];
 
