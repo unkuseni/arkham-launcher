@@ -17,7 +17,6 @@ const DashboardHeader = () => {
 	const pathname = usePathname();
 	const pathSegments = pathname.split("/").filter((segment) => segment);
 
-	console.log(pathname);
 	return (
 		<header className="group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 flex h-12 shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear">
 			<div className="flex items-center gap-2 px-4">
