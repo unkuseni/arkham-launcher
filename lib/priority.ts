@@ -43,7 +43,7 @@ export const getPriorityFee = async (
 
 	// Step 3: Calculate average of top 100 fees to get a competitive rate
 	const fees = data.result?.map((entry) => entry.prioritizationFee) || [];
-	const topFees = fees.sort((a, b) => b - a).slice(0, 100);
+	const topFees = fees.sort((a, b) => b - a).slice(0, 250);
 	const averageFee =
 		topFees.length > 0
 			? Math.ceil(topFees.reduce((sum, fee) => sum + fee, 0) / topFees.length)
