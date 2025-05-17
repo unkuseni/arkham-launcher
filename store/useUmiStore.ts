@@ -1,6 +1,8 @@
+import { tokenBalances } from "@/lib/token/token-balances";
 import { mplTokenMetadata } from "@metaplex-foundation/mpl-token-metadata";
 import { mplToolbox } from "@metaplex-foundation/mpl-toolbox";
 import {
+	PublicKey,
 	type Signer,
 	type TransactionBuilder,
 	type Umi,
@@ -81,6 +83,17 @@ interface UmiState {
 	 * @param {string} [customEndpoint] - The custom RPC endpoint URL to use.
 	 */
 	setNetwork: (network: Network, customEndpoint?: string) => void;
+
+
+	getTokenBalances: () => Promise<{
+		mint: PublicKey,
+		amount: bigint,
+		owner: PublicKey,
+		tokenAddress: PublicKey,
+		decimals: number,
+		symbol: string,
+		name: string
+	}[]>;
 	/**
 	 * Get the network configuration for the current network.
 	 * @returns {Record<Network, NetworkConfig>} - The network configuration.
@@ -190,6 +203,7 @@ const useUmiStore = create<UmiState>()((set, get) => ({
 
 	rpcEndpoint: defaultEndpoint,
 
+
 	network: defaultNetwork,
 
 	networkConfig: NETWORK_CONFIGS[defaultNetwork],
@@ -265,6 +279,22 @@ const useUmiStore = create<UmiState>()((set, get) => ({
 			networkConfig: config,
 		}));
 		get().checkConnection();
+	},
+
+	getTokenBalances: (): Promise<{
+		mint: PublicKey,
+		amount: bigint,
+		owner: PublicKey,
+		tokenAddress: PublicKey,
+		decimals: number,
+		symbol: string,
+		name: string
+	}[]> => {
+		const { umi, signer } = get();
+		if (!signer) {
+			return Promise.resolve([]);
+		}
+		return tokenBalances(umi, signer);
 	},
 
 	getNetworkConfig: () => NETWORK_CONFIGS,
