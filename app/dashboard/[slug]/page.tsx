@@ -15,21 +15,30 @@ export default async function Page({
 	const { slug } = await params;
 
 	let content: ReactNode;
-
-	if (slug === "create-token") {
-		content = <CreateToken />;
-	} else if (slug === "mint-token") {
-		content = <MintTokens />;
-	} else if (slug === "transfer-token") {
-		content = <TransferTokens />;
-	} else if (slug === "delegate-token") {
-		content = <DelegateTokens />;
-	} else if (slug === "update-token") {
-		content = <UpdateToken />;
-	} else if (slug === "burn-token") {
-		content = <BurnTokens />;
-	} else if (slug === "freeze-token") {
-		content = <FreezeToken />;
+	switch (slug) {
+		case "create-token":
+			content = <CreateToken />;
+			break;
+		case "mint-token":
+			content = <MintTokens />;
+			break;
+		case "transfer-token":
+			content = <TransferTokens />;
+			break;
+		case "delegate-token":
+			content = <DelegateTokens />;
+			break;
+		case "update-token":
+			content = <UpdateToken />;
+			break;
+		case "burn-token":
+			content = <BurnTokens />;
+			break;
+		case "freeze-token":
+			content = <FreezeToken />;
+			break;
+		default:
+			content = <p>Invalid slug</p>;
 	}
 	return (
 		<>
