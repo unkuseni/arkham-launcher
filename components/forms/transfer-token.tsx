@@ -116,7 +116,7 @@ const TransferTokenForm = () => {
 				recipient: values.recipient,
 			});
 
-			const signature = await transferAsset(
+			const result = await transferAsset(
 				{
 					mint: values.token.mint,
 					amount: rawAmount,
@@ -126,11 +126,11 @@ const TransferTokenForm = () => {
 			);
 
 			// Explicitly log the transaction result for debugging
-			console.log("Transfer successful, signature:", signature);
+			console.log("Transfer successful, signature:", result.signature);
 
 			// Ensure we're getting a string value for txSignature
 			setTxSignature(
-				typeof signature === "string" ? signature : String(signature),
+				typeof result.signature === "string" ? result.signature : String(result.signature),
 			);
 
 			// Reset form and refresh balances with a slight delay to ensure state updates
