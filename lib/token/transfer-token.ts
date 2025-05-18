@@ -300,6 +300,16 @@ export const transferOneAssetManyToOne = async (
 					owner: destinationPublicKey,
 				});
 
+				// Ensure the destination ATA is created if it does not exist for each recipient.
+				// createTokenIfMissing is idempotent.
+				builder = builder.add(
+					createTokenIfMissing(umi, {
+						mint: mintPublicKey,
+						owner: destinationPublicKey,
+						token: destinationATA, // Explicitly provide the derived ATA
+					}),
+				);
+
 				builder = builder.add(
 					transferTokens(umi, {
 						source: sourceATA,
