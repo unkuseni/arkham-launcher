@@ -84,16 +84,17 @@ interface UmiState {
 	 */
 	setNetwork: (network: Network, customEndpoint?: string) => void;
 
-
-	getTokenBalances: () => Promise<{
-		mint: PublicKey,
-		amount: bigint,
-		owner: PublicKey,
-		tokenAddress: PublicKey,
-		decimals: number,
-		symbol: string,
-		name: string
-	}[]>;
+	getTokenBalances: () => Promise<
+		{
+			mint: PublicKey;
+			amount: bigint;
+			owner: PublicKey;
+			tokenAddress: PublicKey;
+			decimals: number;
+			symbol: string;
+			name: string;
+		}[]
+	>;
 	/**
 	 * Get the network configuration for the current network.
 	 * @returns {Record<Network, NetworkConfig>} - The network configuration.
@@ -203,7 +204,6 @@ const useUmiStore = create<UmiState>()((set, get) => ({
 
 	rpcEndpoint: defaultEndpoint,
 
-
 	network: defaultNetwork,
 
 	networkConfig: NETWORK_CONFIGS[defaultNetwork],
@@ -281,15 +281,17 @@ const useUmiStore = create<UmiState>()((set, get) => ({
 		get().checkConnection();
 	},
 
-	getTokenBalances: (): Promise<{
-		mint: PublicKey,
-		amount: bigint,
-		owner: PublicKey,
-		tokenAddress: PublicKey,
-		decimals: number,
-		symbol: string,
-		name: string
-	}[]> => {
+	getTokenBalances: (): Promise<
+		{
+			mint: PublicKey;
+			amount: bigint;
+			owner: PublicKey;
+			tokenAddress: PublicKey;
+			decimals: number;
+			symbol: string;
+			name: string;
+		}[]
+	> => {
 		const { umi, signer } = get();
 		if (!signer) {
 			return Promise.resolve([]);

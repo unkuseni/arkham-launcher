@@ -7,20 +7,49 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from "../ui/card";
+import {
+	Form,
+	FormControl,
+	FormField,
+	FormItem,
+	FormLabel,
+	FormMessage,
+} from "../ui/form";
 import { Input } from "../ui/input";
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import {
+	Select,
+	SelectContent,
+	SelectGroup,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "../ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "../ui/tooltip";
 
 const TransferTokens = () => {
 	return (
-		<Tabs defaultValue="transfer-token" >
+		<Tabs defaultValue="transfer-token">
 			<TabsList className="mx-auto">
 				<TabsTrigger value="transfer-token">Transfer Token</TabsTrigger>
-				<TabsTrigger value="transfer-multiple-tokens-from-one-to-many">Transfer Multiple Tokens from one to many</TabsTrigger>
-				<TabsTrigger value="transfer-multiple-tokens-from-many-to-one">Transfer Multiple Tokens from many to one</TabsTrigger>
+				<TabsTrigger value="transfer-multiple-tokens-from-one-to-many">
+					Transfer Multiple Tokens from one to many
+				</TabsTrigger>
+				<TabsTrigger value="transfer-multiple-tokens-from-many-to-one">
+					Transfer Multiple Tokens from many to one
+				</TabsTrigger>
 			</TabsList>
 			<TabsContent value="transfer-token">
 				<div className="font-mono flex flex-col gap-4 max-w-4xl mx-auto">
@@ -34,7 +63,8 @@ const TransferTokens = () => {
 						<CardHeader>
 							<CardTitle>Transfer Tokens</CardTitle>
 							<CardDescription>
-								Fill in the details below to transfer your SPL tokens to another wallet.
+								Fill in the details below to transfer your SPL tokens to another
+								wallet.
 							</CardDescription>
 						</CardHeader>
 						<CardContent>
@@ -55,21 +85,22 @@ const TransferTokens = () => {
 
 type FormValues = z.infer<typeof formSchema>;
 
-
 const formSchema = z.object({
 	recipient: z.string().min(1, "Recipient is required"),
 	amount: z.number().min(0, "Amount must be greater than 0"),
 	token: z.object({
 		mint: z.string().min(1, "Mint is required"),
 		decimals: z.number().min(0, "Decimals must be greater than 0"),
-	})
-})
+	}),
+});
 
-
-type RawBalance = Awaited<ReturnType<typeof useUmiStore.prototype.getTokenBalances>>[number];
+type RawBalance = Awaited<
+	ReturnType<typeof useUmiStore.prototype.getTokenBalances>
+>[number];
 
 const TransferTokenForm = () => {
-	const { umi, signer, connectionStatus, network, getTokenBalances } = useUmiStore();
+	const { umi, signer, connectionStatus, network, getTokenBalances } =
+		useUmiStore();
 	const [tokens, setTokens] = useState<RawBalance[]>([]);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [txSignature, setTxSignature] = useState<string | null>(null);
@@ -130,7 +161,9 @@ const TransferTokenForm = () => {
 
 			// Ensure we're getting a string value for txSignature
 			setTxSignature(
-				typeof result.signature === "string" ? result.signature : String(result.signature),
+				typeof result.signature === "string"
+					? result.signature
+					: String(result.signature),
 			);
 
 			// Reset form and refresh balances with a slight delay to ensure state updates
@@ -162,12 +195,15 @@ const TransferTokenForm = () => {
 				<div className="flex justify-center p-6">Connecting wallet...</div>
 			);
 		}
-	}
+	};
 
 	if (!signer) {
 		return (
 			<div className="flex flex-col items-center justify-center p-6 space-y-4">
-				<Badge variant="outline" className="px-3 py-1 text-yellow-600 border-yellow-600">
+				<Badge
+					variant="outline"
+					className="px-3 py-1 text-yellow-600 border-yellow-600"
+				>
 					No Wallet Connected
 				</Badge>
 				<p className="text-center text-muted-foreground">
@@ -180,27 +216,28 @@ const TransferTokenForm = () => {
 	return (
 		<div className="space-y-6">
 			{/* Success message */}
-			{txSignature && (() => {
-				let explorerUrl = `https://explorer.solana.com/tx/${txSignature}`;
-				if (network && network !== Network.CUSTOM) {
-					explorerUrl += `?cluster=${network}`;
-				}
-				return (
-					<div className="p-4 mb-4 border border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-900 rounded-md">
-						<p className="text-sm font-medium text-green-800 dark:text-green-400">
-							Transaction successful!{" "}
-							<a
-								href={explorerUrl}
-								target="_blank"
-								rel="noopener noreferrer"
-								className="underline hover:no-underline"
-							>
-								View on Solana Explorer
-							</a>
-						</p >
-					</div >
-				);
-			})()}
+			{txSignature &&
+				(() => {
+					let explorerUrl = `https://explorer.solana.com/tx/${txSignature}`;
+					if (network && network !== Network.CUSTOM) {
+						explorerUrl += `?cluster=${network}`;
+					}
+					return (
+						<div className="p-4 mb-4 border border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-900 rounded-md">
+							<p className="text-sm font-medium text-green-800 dark:text-green-400">
+								Transaction successful!{" "}
+								<a
+									href={explorerUrl}
+									target="_blank"
+									rel="noopener noreferrer"
+									className="underline hover:no-underline"
+								>
+									View on Solana Explorer
+								</a>
+							</p>
+						</div>
+					);
+				})()}
 
 			{/* Error message */}
 			{error && (
@@ -223,11 +260,13 @@ const TransferTokenForm = () => {
 									<Select
 										value={field.value.mint}
 										onValueChange={(mint) => {
-											const token = tokens.find(t => t.mint.toString() === mint);
+											const token = tokens.find(
+												(t) => t.mint.toString() === mint,
+											);
 											if (token) {
 												field.onChange({
 													mint,
-													decimals: token.decimals
+													decimals: token.decimals,
 												});
 											}
 										}}
@@ -246,7 +285,8 @@ const TransferTokenForm = () => {
 													tokens.map((token) => {
 														const mintAddress = token.mint.toString();
 														const shortMint = `${mintAddress.slice(0, 4)}...${mintAddress.slice(-4)}`;
-														const balance = Number(token.amount) / (10 ** token.decimals);
+														const balance =
+															Number(token.amount) / 10 ** token.decimals;
 
 														return (
 															<SelectItem
@@ -268,7 +308,9 @@ const TransferTokenForm = () => {
 																			</span>
 																		</TooltipTrigger>
 																		<TooltipContent>
-																			<p className="font-mono text-xs">{mintAddress}</p>
+																			<p className="font-mono text-xs">
+																				{mintAddress}
+																			</p>
 																		</TooltipContent>
 																	</Tooltip>
 																</TooltipProvider>
@@ -300,7 +342,9 @@ const TransferTokenForm = () => {
 										type="number"
 										placeholder="Enter amount to send"
 										{...field}
-										onChange={(e) => field.onChange(Number.parseFloat(e.target.value) || 0)}
+										onChange={(e) =>
+											field.onChange(Number.parseFloat(e.target.value) || 0)
+										}
 										disabled={isSubmitting}
 									/>
 								</FormControl>
@@ -338,6 +382,6 @@ const TransferTokenForm = () => {
 				</form>
 			</Form>
 		</div>
-	)
-}
+	);
+};
 export default TransferTokens;

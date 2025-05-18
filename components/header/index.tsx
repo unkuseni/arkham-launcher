@@ -1,4 +1,4 @@
-'use client';
+"use client";
 import { ThemeSwitcher } from "@/components/ui/mode-toggle";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { MultiWalletButton } from "../wallet-btn";

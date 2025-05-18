@@ -41,21 +41,25 @@ export async function uploadMetadataToPinata(
 ): Promise<string | null> {
 	// Call internal API route to handle Pinata upload
 	try {
-		const response = await fetch('/api/pinata/pinJSON', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
+		const response = await fetch("/api/pinata/pinJSON", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify(metadata),
 		});
 
 		if (!response.ok) {
 			const errorData = await response.json().catch(() => null);
-			console.error('Error uploading JSON via internal API:', response.status, errorData);
+			console.error(
+				"Error uploading JSON via internal API:",
+				response.status,
+				errorData,
+			);
 			return null;
 		}
 
 		const result = await response.json();
 		const hash = result.IpfsHash;
-		console.log('Metadata uploaded via internal API. IPFS Hash:', hash);
+		console.log("Metadata uploaded via internal API. IPFS Hash:", hash);
 		// Return gateway URL
 		return `https://gateway.pinata.cloud/ipfs/${hash}`;
 	} catch (error) {

@@ -54,7 +54,8 @@ const TokenSuccessModal = ({
 	const solanaExplorerBaseUrl = "https://explorer.solana.com";
 	// Build explorer URL with cluster query when not mainnet-beta
 	const buildExplorerUrl = (path: string) => {
-		const clusterParam = network === "mainnet-beta" ? "" : `?cluster=${network}`;
+		const clusterParam =
+			network === "mainnet-beta" ? "" : `?cluster=${network}`;
 		return `${solanaExplorerBaseUrl}/${path}${clusterParam}`;
 	};
 
@@ -146,8 +147,8 @@ const TokenSuccessModal = ({
 											onClick={() =>
 												openInNewTab(
 													buildExplorerUrl(
-														`address/${tokenDetails.txResult?.mintAddress}`
-													)
+														`address/${tokenDetails.txResult?.mintAddress}`,
+													),
 												)
 											}
 											title={tokenDetails.txResult.mintAddress}
@@ -170,8 +171,8 @@ const TokenSuccessModal = ({
 											onClick={() =>
 												openInNewTab(
 													buildExplorerUrl(
-														`address/${tokenDetails.txResult?.tokenAddress}`
-													)
+														`address/${tokenDetails.txResult?.tokenAddress}`,
+													),
 												)
 											}
 											title={tokenDetails.txResult.tokenAddress}
@@ -194,8 +195,8 @@ const TokenSuccessModal = ({
 											onClick={() =>
 												openInNewTab(
 													buildExplorerUrl(
-														`tx/${tokenDetails.txResult?.signature}`
-													)
+														`tx/${tokenDetails.txResult?.signature}`,
+													),
 												)
 											}
 											title={tokenDetails.txResult.signature}
@@ -225,6 +226,3 @@ const TokenSuccessModal = ({
 
 export default TokenSuccessModal;
 export type { TokenDetails };
-
-
-
