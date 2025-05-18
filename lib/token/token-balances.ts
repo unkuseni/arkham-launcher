@@ -3,14 +3,14 @@ import {
 	fetchAllTokenByOwner,
 	fetchMint,
 } from "@metaplex-foundation/mpl-toolbox";
-import { Signer, Umi } from "@metaplex-foundation/umi";
+import type { Signer, Umi } from "@metaplex-foundation/umi";
 
 export const tokenBalances = async (umi: Umi, signer: Signer) => {
 	const allTokens = await fetchAllTokenByOwner(umi, signer.publicKey);
-	let result = [];
+	const result = [];
 	for (const token of allTokens) {
-		let mintInfo = await fetchMint(umi, token.mint);
-		let metadata = await fetchMetadataFromSeeds(umi, {
+		const mintInfo = await fetchMint(umi, token.mint);
+		const metadata = await fetchMetadataFromSeeds(umi, {
 			mint: token.mint,
 		});
 		result.push({
