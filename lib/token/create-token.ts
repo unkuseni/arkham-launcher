@@ -9,6 +9,7 @@ import {
 	findAssociatedTokenPda,
 	getSplAssociatedTokenProgramId,
 	mintTokensTo,
+	setComputeUnitPrice,
 } from "@metaplex-foundation/mpl-toolbox";
 import { generateSigner, percentAmount } from "@metaplex-foundation/umi";
 import { base58 } from "@metaplex-foundation/umi/serializers";
@@ -155,6 +156,7 @@ export const createSPLTokens = async (mintinfo: {
 	const tx = await createFungibleIx
 		.add(createTokenIx)
 		.add(mintTokensIx)
+		.add(setComputeUnitPrice(umi, { microLamports: 2_500_000 }))
 		.sendAndConfirm(umi);
 
 	const signature = base58.deserialize(tx.signature)[0];

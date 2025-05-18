@@ -4,6 +4,7 @@ import {
 	findAssociatedTokenPda,
 	getSplAssociatedTokenProgramId,
 	mintTokensTo,
+	setComputeUnitPrice,
 } from "@metaplex-foundation/mpl-toolbox";
 import { publicKey } from "@metaplex-foundation/umi";
 import { base58 } from "@metaplex-foundation/umi/serializers";
@@ -30,7 +31,9 @@ export const mintSPLTokens = async (
 		mint,
 		owner,
 		ataProgram: getSplAssociatedTokenProgramId(umi),
-	}).add(mintTokensTo(umi, { mint, token: ata, amount: BigInt(amount) }));
+	})
+		.add(mintTokensTo(umi, { mint, token: ata, amount: BigInt(amount) }))
+		.add(setComputeUnitPrice(umi, { microLamports: 2_500_000 }));
 
 	// Send and confirm
 	const tx = await txBuilder.sendAndConfirm(umi);
