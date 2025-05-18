@@ -107,7 +107,7 @@ const TransferTokenForm = () => {
 
 		try {
 			// Calculate the amount in raw units (applying decimal places)
-			const rawAmount = values.amount * 10 ** values.token.decimals;
+			const rawAmount = values.amount;
 
 			// Add logging to debug the transaction process
 			console.log("Sending transfer:", {
