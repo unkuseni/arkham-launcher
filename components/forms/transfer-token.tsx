@@ -1,6 +1,6 @@
 "use client";
 import { transferAsset } from "@/lib/token/transfer-token";
-import useUmiStore, { ConnectionStatus } from "@/store/useUmiStore";
+import useUmiStore, { ConnectionStatus, Network } from "@/store/useUmiStore";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -11,29 +11,45 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
 import { Input } from "../ui/input";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 
 const TransferTokens = () => {
 	return (
-		<div className="font-mono flex flex-col gap-4 max-w-4xl mx-auto">
-			<article className="mx-auto text-center">
-				<h1 className="text-4xl font-bold py-2.5 px-4 capitalize font-inter">
-					Transfer SPL Tokens
-				</h1>
-				<p>Transfer additional tokens to a specified account.</p>
-			</article>
-			<Card>
-				<CardHeader>
-					<CardTitle>Transfer Tokens</CardTitle>
-					<CardDescription>
-						Fill in the details below to transfer your SPL tokens to another wallet.
-					</CardDescription>
-				</CardHeader>
-				<CardContent>
-					<TransferTokenForm />
-				</CardContent>
-			</Card>
-		</div>
+		<Tabs defaultValue="transfer-token" >
+			<TabsList className="mx-auto">
+				<TabsTrigger value="transfer-token">Transfer Token</TabsTrigger>
+				<TabsTrigger value="transfer-multiple-tokens-from-one-to-many">Transfer Multiple Tokens from one to many</TabsTrigger>
+				<TabsTrigger value="transfer-multiple-tokens-from-many-to-one">Transfer Multiple Tokens from many to one</TabsTrigger>
+			</TabsList>
+			<TabsContent value="transfer-token">
+				<div className="font-mono flex flex-col gap-4 max-w-4xl mx-auto">
+					<article className="mx-auto text-center">
+						<h1 className="text-4xl font-bold py-2.5 px-4 capitalize font-inter">
+							Transfer SPL Tokens
+						</h1>
+						<p>Transfer additional tokens to a specified account.</p>
+					</article>
+					<Card>
+						<CardHeader>
+							<CardTitle>Transfer Tokens</CardTitle>
+							<CardDescription>
+								Fill in the details below to transfer your SPL tokens to another wallet.
+							</CardDescription>
+						</CardHeader>
+						<CardContent>
+							<TransferTokenForm />
+						</CardContent>
+					</Card>
+				</div>
+			</TabsContent>
+			<TabsContent value="transfer-multiple-tokens-from-one-to-many">
+				<div>Transfer Multiple Tokens from one to many</div>
+			</TabsContent>
+			<TabsContent value="transfer-multiple-tokens-from-many-to-one">
+				<div>Transfer Multiple Tokens from many to one</div>
+			</TabsContent>
+		</Tabs>
 	);
 };
 
@@ -53,7 +69,7 @@ const formSchema = z.object({
 type RawBalance = Awaited<ReturnType<typeof useUmiStore.prototype.getTokenBalances>>[number];
 
 const TransferTokenForm = () => {
-	const { umi, signer, connectionStatus, getTokenBalances } = useUmiStore();
+	const { umi, signer, connectionStatus, network, getTokenBalances } = useUmiStore();
 	const [tokens, setTokens] = useState<RawBalance[]>([]);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [txSignature, setTxSignature] = useState<string | null>(null);
@@ -164,21 +180,27 @@ const TransferTokenForm = () => {
 	return (
 		<div className="space-y-6">
 			{/* Success message */}
-			{txSignature && (
-				<div className="p-4 mb-4 border border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-900 rounded-md">
-					<p className="text-sm font-medium text-green-800 dark:text-green-400">
-						Transaction successful!{" "}
-						<a
-							href={`https://explorer.solana.com/tx/${txSignature}`}
-							target="_blank"
-							rel="noopener noreferrer"
-							className="underline hover:no-underline"
-						>
-							View on Solana Explorer
-						</a>
-					</p>
-				</div>
-			)}
+			{txSignature && (() => {
+				let explorerUrl = `https://explorer.solana.com/tx/${txSignature}`;
+				if (network && network !== Network.CUSTOM) {
+					explorerUrl += `?cluster=${network}`;
+				}
+				return (
+					<div className="p-4 mb-4 border border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-900 rounded-md">
+						<p className="text-sm font-medium text-green-800 dark:text-green-400">
+							Transaction successful!{" "}
+							<a
+								href={explorerUrl}
+								target="_blank"
+								rel="noopener noreferrer"
+								className="underline hover:no-underline"
+							>
+								View on Solana Explorer
+							</a>
+						</p >
+					</div >
+				);
+			})()}
 
 			{/* Error message */}
 			{error && (
