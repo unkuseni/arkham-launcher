@@ -3,20 +3,22 @@ import {
 	createTokenIfMissing,
 	fetchMint,
 	findAssociatedTokenPda,
+	setComputeUnitPrice,
 	transferSol,
 	transferTokens,
 } from "@metaplex-foundation/mpl-toolbox";
 import {
 	type Signer,
 	type Umi,
-	generateSigner, // Included for completeness
-	isPublicKey, // Included for completeness
 	publicKey,
 	sol,
-	some, // Included for completeness
 	transactionBuilder,
 } from "@metaplex-foundation/umi";
 import { base58 } from "@metaplex-foundation/umi/serializers";
+
+// Maximum number of instructions per transaction to avoid Solana size/compute limits
+const MAX_SPL_TRANSFERS = 10;
+const MAX_SOL_TRANSFERS = 256;
 
 const SOL_MINT_ADDRESS = "11111111111111111111111111111111"; // Native SOL mint
 
@@ -67,11 +69,14 @@ export const transferAsset = async (
 					amount: sol(amount), // Umi's sol helper converts human-readable SOL to lamports
 				}),
 			);
+			builder = builder.add(
+				setComputeUnitPrice(umi, { microLamports: 2_500_000 }),
+			);
 		} else {
 			// SPL Token Transfer
 			const mintInfo = await fetchMint(umi, mintPublicKey);
 			// Convert human-readable amount to raw amount based on token decimals
-			const rawAmount = BigInt(Math.trunc(amount * 10 ** mintInfo.decimals));
+			const rawAmount = BigInt(Math.round(amount * 10 ** mintInfo.decimals));
 
 			// Derive the Associated Token Account (ATA) for the source
 			const sourceATA = findAssociatedTokenPda(umi, {
@@ -103,6 +108,9 @@ export const transferAsset = async (
 					authority: authority, // The authority signing for the source ATA
 				}),
 			);
+			builder = builder.add(
+				setComputeUnitPrice(umi, { microLamports: 2_500_000 }),
+			);
 		}
 
 		// Check if any instructions were added to the builder
@@ -116,9 +124,10 @@ export const transferAsset = async (
 		});
 		// Deserialize the signature from Uint8Array to base58 string
 		return { signature: base58.deserialize(result.signature)[0] };
-	} catch (error: any) {
+	} catch (error: unknown) {
 		console.error("Transfer failed:", error);
-		return { error: `Transfer failed: ${error.message || String(error)}` };
+		const message = error instanceof Error ? error.message : String(error);
+		return { error: `Transfer failed: ${message}` };
 	}
 };
 
@@ -148,7 +157,7 @@ interface TransferOneToManyParams {
 export const transferOneAssetToMany = async (
 	params: TransferOneToManyParams,
 	umi: Umi,
-): Promise<{ signature?: string; error?: string }> => {
+): Promise<{ signatures?: string[]; error?: string }> => {
 	const { mint, recipients, sourceSigner } = params;
 	// Use the provided sourceSigner or default to umi.identity
 	const authority = sourceSigner || umi.identity;
@@ -162,6 +171,7 @@ export const transferOneAssetToMany = async (
 	}
 
 	let builder = transactionBuilder();
+	const signatures: string[] = [];
 	const mintPublicKey = publicKey(mint);
 	const isSOL = mint === SOL_MINT_ADDRESS;
 
@@ -189,13 +199,15 @@ export const transferOneAssetToMany = async (
 			const humanAmount = recipient.amount;
 
 			if (isSOL) {
-				// Add SOL transfer instruction
 				builder = builder.add(
 					transferSol(umi, {
 						source: authority,
 						destination: recipientPublicKey,
 						amount: sol(humanAmount),
 					}),
+				);
+				builder = builder.add(
+					setComputeUnitPrice(umi, { microLamports: 2_500_000 }),
 				);
 			} else {
 				// SPL Token Transfer
@@ -208,7 +220,7 @@ export const transferOneAssetToMany = async (
 				}
 				// Convert human-readable amount to raw amount
 				const rawAmount = BigInt(
-					Math.trunc(humanAmount * 10 ** mintInfo.decimals),
+					Math.round(humanAmount * 10 ** mintInfo.decimals),
 				);
 
 				// Derive source and destination ATAs
@@ -239,23 +251,35 @@ export const transferOneAssetToMany = async (
 						authority: authority,
 					}),
 				);
+				builder = builder.add(
+					setComputeUnitPrice(umi, { microLamports: 2_500_000 }),
+				);
+			}
+			// Flush if reaching MAX instructions
+			if (builder.items.length >= MAX_SPL_TRANSFERS) {
+				const res = await builder.sendAndConfirm(umi, {
+					confirm: { commitment: "finalized" },
+				});
+				signatures.push(base58.deserialize(res.signature)[0]);
+				builder = transactionBuilder();
 			}
 		}
-
-		// Check if any valid instructions were added
-		if (builder.items.length === 0) {
+		// Final flush for remaining instructions
+		if (builder.items.length > 0) {
+			const res = await builder.sendAndConfirm(umi, {
+				confirm: { commitment: "finalized" },
+			});
+			signatures.push(base58.deserialize(res.signature)[0]);
+		}
+		if (signatures.length === 0) {
 			return { error: "No valid transfer instructions to send." };
 		}
-
-		// Send and confirm the transaction
-		const result = await builder.sendAndConfirm(umi, {
-			confirm: { commitment: "finalized" },
-		});
-		return { signature: base58.deserialize(result.signature)[0] };
-	} catch (e: any) {
-		console.error("Error in transferOneAssetToMany:", e);
+		return { signatures };
+	} catch (error: unknown) {
+		console.error("Error in transferOneAssetToMany:", error);
+		const message = error instanceof Error ? error.message : String(error);
 		return {
-			error: e.message || "An unknown error occurred during batch transfer.",
+			error: message || "An unknown error occurred during batch transfer.",
 		};
 	}
 };
@@ -287,7 +311,7 @@ interface TransferManyToOneParams {
 export const transferOneAssetManyToOne = async (
 	params: TransferManyToOneParams,
 	umi: Umi,
-): Promise<{ signature?: string; error?: string }> => {
+): Promise<{ signatures?: string[]; error?: string }> => {
 	const { mint, sources, destination } = params;
 
 	// Validate input parameters
@@ -302,6 +326,7 @@ export const transferOneAssetManyToOne = async (
 	}
 
 	let builder = transactionBuilder();
+	const signatures: string[] = [];
 	const mintPublicKey = publicKey(mint);
 	const destinationPublicKey = publicKey(destination);
 	const isSOL = mint === SOL_MINT_ADDRESS;
@@ -344,13 +369,15 @@ export const transferOneAssetManyToOne = async (
 			}
 
 			if (isSOL) {
-				// Add SOL transfer instruction
 				builder = builder.add(
 					transferSol(umi, {
-						source: signer, // Each source uses their own signer
+						source: signer,
 						destination: destinationPublicKey,
 						amount: sol(humanAmount),
 					}),
+				);
+				builder = builder.add(
+					setComputeUnitPrice(umi, { microLamports: 2_500_000 }),
 				);
 			} else {
 				// SPL Token Transfer
@@ -363,7 +390,7 @@ export const transferOneAssetManyToOne = async (
 				}
 				// Convert human-readable amount to raw amount
 				const rawAmount = BigInt(
-					Math.trunc(humanAmount * 10 ** mintInfo.decimals),
+					Math.round(humanAmount * 10 ** mintInfo.decimals),
 				);
 
 				// Derive source and destination ATAs
@@ -386,24 +413,35 @@ export const transferOneAssetManyToOne = async (
 						authority: signer, // Each source's signer authorizes their part of the transfer
 					}),
 				);
+				builder = builder.add(
+					setComputeUnitPrice(umi, { microLamports: 2_500_000 }),
+				);
+			}
+			// Flush batch
+			if (builder.items.length >= MAX_SPL_TRANSFERS) {
+				const res = await builder.sendAndConfirm(umi, {
+					confirm: { commitment: "finalized" },
+				});
+				signatures.push(base58.deserialize(res.signature)[0]);
+				builder = transactionBuilder();
 			}
 		}
-
-		// Check if any valid instructions were added
-		if (builder.items.length === 0) {
+		// Final flush
+		if (builder.items.length > 0) {
+			const res = await builder.sendAndConfirm(umi, {
+				confirm: { commitment: "finalized" },
+			});
+			signatures.push(base58.deserialize(res.signature)[0]);
+		}
+		if (signatures.length === 0) {
 			return { error: "No valid transfer instructions to send." };
 		}
-
-		// Send and confirm the transaction.
-		// Umi automatically gathers all required signers from the instructions.
-		const result = await builder.sendAndConfirm(umi, {
-			confirm: { commitment: "finalized" },
-		});
-		return { signature: base58.deserialize(result.signature)[0] };
-	} catch (e: any) {
-		console.error("Error in transferOneAssetManyToOne:", e);
+		return { signatures };
+	} catch (error: unknown) {
+		console.error("Error in transferOneAssetManyToOne:", error);
+		const message = error instanceof Error ? error.message : String(error);
 		return {
-			error: e.message || "An unknown error occurred during M-to-1 transfer.",
+			error: message || "An unknown error occurred during M-to-1 transfer.",
 		};
 	}
 };
@@ -485,6 +523,9 @@ export const transferManyAssetsToManyRecipients = async (
 						amount: sol(amount),
 					}),
 				);
+				builder = builder.add(
+					setComputeUnitPrice(umi, { microLamports: 2_500_000 }),
+				);
 			} else {
 				// SPL Token Transfer
 				let mintInfo = mintInfoCache.get(mint);
@@ -509,7 +550,7 @@ export const transferManyAssetsToManyRecipients = async (
 					return { error: `Mint info for ${mint} is unexpectedly undefined.` };
 				}
 
-				const rawAmount = BigInt(Math.trunc(amount * 10 ** mintInfo.decimals));
+				const rawAmount = BigInt(Math.round(amount * 10 ** mintInfo.decimals));
 
 				const sourceATA = findAssociatedTokenPda(umi, {
 					mint: mintPublicKey,
@@ -536,6 +577,9 @@ export const transferManyAssetsToManyRecipients = async (
 						authority: authority,
 					}),
 				);
+				builder = builder.add(
+					setComputeUnitPrice(umi, { microLamports: 2_500_000 }),
+				);
 			}
 		}
 
@@ -547,11 +591,12 @@ export const transferManyAssetsToManyRecipients = async (
 			confirm: { commitment: "finalized" },
 		});
 		return { signature: base58.deserialize(result.signature)[0] };
-	} catch (error: any) {
+	} catch (error: unknown) {
 		console.error("Error in transferManyAssetsToManyRecipients:", error);
+		const message = error instanceof Error ? error.message : String(error);
 		return {
 			error:
-				error.message ||
+				message ||
 				"An unknown error occurred during many-assets-to-many-recipients transfer.",
 		};
 	}
@@ -634,6 +679,9 @@ export const transferManyAssetsToSingleRecipient = async (
 						amount: sol(amount),
 					}),
 				);
+				builder = builder.add(
+					setComputeUnitPrice(umi, { microLamports: 2_000_000 }),
+				);
 			} else {
 				// SPL Token Transfer
 				let mintInfo = mintInfoCache.get(mint);
@@ -659,7 +707,7 @@ export const transferManyAssetsToSingleRecipient = async (
 					return { error: `Mint info for ${mint} is unexpectedly undefined.` };
 				}
 
-				const rawAmount = BigInt(Math.trunc(amount * 10 ** mintInfo.decimals));
+				const rawAmount = BigInt(Math.round(amount * 10 ** mintInfo.decimals));
 
 				const sourceATA = findAssociatedTokenPda(umi, {
 					mint: mintPublicKey,
@@ -688,6 +736,9 @@ export const transferManyAssetsToSingleRecipient = async (
 						authority: authority,
 					}),
 				);
+				builder = builder.add(
+					setComputeUnitPrice(umi, { microLamports: 2_000_000 }),
+				);
 			}
 		}
 
@@ -699,11 +750,12 @@ export const transferManyAssetsToSingleRecipient = async (
 			confirm: { commitment: "finalized" },
 		});
 		return { signature: base58.deserialize(result.signature)[0] };
-	} catch (error: any) {
+	} catch (error: unknown) {
 		console.error("Error in transferManyAssetsToSingleRecipient:", error);
+		const message = error instanceof Error ? error.message : String(error);
 		return {
 			error:
-				error.message ||
+				message ||
 				"An unknown error occurred during many-assets-to-single-recipient transfer.",
 		};
 	}
