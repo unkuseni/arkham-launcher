@@ -1,5 +1,9 @@
 import useUmiStore from "@/store/useUmiStore";
-import { type Keypair, generateSigner } from "@metaplex-foundation/umi"; // Changed Signer to Keypair if generateSigner returns a Keypair
+import {
+	type Keypair,
+	generateSigner,
+	publicKey,
+} from "@metaplex-foundation/umi"; // Changed Signer to Keypair if generateSigner returns a Keypair
 import { uploadJsonToCloudflareR2 } from "./s3-bucket"; // Ensure this path is correct
 
 export const createKeypairAndUpload = async (
@@ -67,4 +71,51 @@ export const createKeypairAndUpload = async (
 	}
 
 	return results;
+};
+
+export const getKeypairFromUrl = async (
+	url: string,
+): Promise<Keypair | null> => {
+	try {
+		const response = await fetch(url);
+		if (!response.ok) {
+			console.error(
+				`Failed to fetch keypair from ${url}: ${response.statusText}`,
+			);
+			return null;
+		}
+		// Assuming the stored JSON has the structure: { creatorPublicKey: string, publicKey: string, secretKey: number[] }
+		const keypairData = await response.json();
+
+		if (
+			!keypairData.publicKey ||
+			!keypairData.secretKey ||
+			!Array.isArray(keypairData.secretKey)
+		) {
+			console.error("Invalid keypair data format from URL:", keypairData);
+			return null;
+		}
+
+		const publicKeyString = keypairData.publicKey as string;
+		const secretKeyArray = keypairData.secretKey as number[];
+
+		// Reconstruct the PublicKey object
+		const reconstructedPublicKey = publicKey(publicKeyString);
+		// Reconstruct the secretKey Uint8Array
+		const reconstructedSecretKey = new Uint8Array(secretKeyArray);
+
+		const reconstructedKeypair: Keypair = {
+			publicKey: reconstructedPublicKey,
+			secretKey: reconstructedSecretKey,
+		};
+
+		// This reconstructedKeypair object can be directly used as a Signer in Umi
+		return reconstructedKeypair;
+	} catch (error) {
+		console.error(
+			"Error retrieving or reconstructing keypair from URL:",
+			error,
+		);
+		return null;
+	}
 };
