@@ -2,7 +2,7 @@ import { tokenBalances } from "@/lib/token/token-balances";
 import { mplTokenMetadata } from "@metaplex-foundation/mpl-token-metadata";
 import { mplToolbox } from "@metaplex-foundation/mpl-toolbox";
 import {
-	PublicKey,
+	type PublicKey,
 	type Signer,
 	type TransactionBuilder,
 	type Umi,
@@ -11,8 +11,10 @@ import {
 	signerIdentity,
 } from "@metaplex-foundation/umi";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
+import { createWeb3JsRpc } from "@metaplex-foundation/umi-rpc-web3js";
 import { createSignerFromWalletAdapter } from "@metaplex-foundation/umi-signer-wallet-adapters";
 import type { WalletAdapter } from "@solana/wallet-adapter-base";
+import type { Connection } from "@solana/web3.js";
 import { create } from "zustand";
 
 export enum ConnectionStatus {
@@ -72,6 +74,8 @@ interface UmiState {
 	 * @param {WalletAdapter} signer - The new wallet adapter to set as signer.
 	 */
 	updateSigner: (signer: WalletAdapter) => void;
+
+	connection: () => Connection;
 	/**
 	 * Update the RPC endpoint and reinitialize Umi with the new endpoint.
 	 * @param {string} endpoint - The new RPC endpoint URL.
@@ -216,6 +220,10 @@ const useUmiStore = create<UmiState>()((set, get) => ({
 
 	maxRetries: 5,
 
+	connection: () => {
+		const { umi } = get();
+		return createWeb3JsRpc(umi, umi.rpc.getEndpoint()).connection;
+	},
 	clearSigner: () => {
 		// Clear the signer by setting it to undefined
 		set(() => ({ signer: undefined }));
