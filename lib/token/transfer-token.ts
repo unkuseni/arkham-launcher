@@ -57,7 +57,7 @@ export const transferAsset = async (
 			);
 		} else {
 			// SPL Token Transfer
-			const mintInfo = await fetchMint(umi, mintPublicKey); // Fetches decimals and tokenProgramId
+			const mintInfo = await fetchMint(umi, mintPublicKey);
 			const rawAmount = BigInt(Math.trunc(amount * 10 ** mintInfo.decimals));
 
 			const sourceATA = findAssociatedTokenPda(umi, {
@@ -69,14 +69,15 @@ export const transferAsset = async (
 				owner: recipientPublicKey,
 			});
 
-			if (!destinationATA) {
-				builder = builder.add(
-					createTokenIfMissing(umi, {
-						mint: mintPublicKey,
-						owner: recipientPublicKey,
-					}),
-				);
-			}
+			// Ensure the destination ATA is created if it does not exist.
+			// createTokenIfMissing is idempotent.
+			builder = builder.add(
+				createTokenIfMissing(umi, {
+					mint: mintPublicKey,
+					owner: recipientPublicKey,
+					token: destinationATA, // Explicitly provide the derived ATA
+				}),
+			);
 
 			builder = builder.add(
 				transferTokens(umi, {
@@ -174,14 +175,15 @@ export const transferOneAssetToMany = async (
 					owner: recipientPublicKey,
 				});
 
-				if (!destinationATA) {
-					builder = builder.add(
-						createTokenIfMissing(umi, {
-							mint: mintPublicKey,
-							owner: recipientPublicKey,
-						}),
-					);
-				}
+				// Ensure the destination ATA is created if it does not exist for each recipient.
+				// createTokenIfMissing is idempotent.
+				builder = builder.add(
+					createTokenIfMissing(umi, {
+						mint: mintPublicKey,
+						owner: recipientPublicKey,
+						token: destinationATA, // Explicitly provide the derived ATA
+					}),
+				);
 
 				builder = builder.add(
 					transferTokens(umi, {
@@ -248,10 +250,15 @@ export const transferOneAssetManyToOne = async (
 		mintInfo = await fetchMint(umi, mintPublicKey);
 		if (!isSOL) {
 			if (sources.length > 0) {
+				const destinationATA = findAssociatedTokenPda(umi, {
+					mint: mintPublicKey,
+					owner: destinationPublicKey,
+				});
 				builder = builder.add(
 					createTokenIfMissing(umi, {
 						mint: mintPublicKey,
 						owner: destinationPublicKey,
+						token: destinationATA, // Explicitly provide the derived ATA
 					}),
 				);
 			}
