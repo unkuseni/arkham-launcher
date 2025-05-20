@@ -9,7 +9,7 @@ import {
 	type CpmmKeys,
 	Percent,
 } from "@raydium-io/raydium-sdk-v2";
-import type { Connection } from "@solana/web3.js"; // Added Connection import
+import { type Connection, PublicKey } from "@solana/web3.js"; // Added Connection import
 import BN from "bn.js";
 import Decimal from "decimal.js";
 import { initSdk, txVersion } from "../index";
@@ -108,16 +108,14 @@ export const addToCPMMPool = async ({
 			microLamports: 46591500,
 		},
 
-		// optional: add transfer sol to tip account instruction. e.g sent tip to jito
-		// txTipConfig: {
-		//   address: new PublicKey('96gYZGLnJYVFmbjzopPSU6QiEV5fGqZNyN9nmNhvrZU5'),
-		//   amount: new BN(10000000), // 0.01 sol
-		// },
+		txTipConfig: {
+			address: new PublicKey("96gYZGLnJYVFmbjzopPSU6QiEV5fGqZNyN9nmNhvrZU5"),
+			amount: new BN(10000000), // 0.01 sol
+		},
 	});
-	// don't want to wait confirm, set sendAndConfirm to false or don't pass any params to execute
-	// const { txId } = await execute({ sendAndConfirm: true })
-	// console.log('pool deposited', { txId: `https://explorer.solana.com/tx/${txId}` })
-	// process.exit() // if you don't want to end up node execution, comment this line
+
+	const { txId } = await execute({ sendAndConfirm: true });
+	return txId; // Return the transaction ID for further processing
 };
 
 /**
