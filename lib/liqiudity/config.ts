@@ -1,6 +1,5 @@
 import { Network } from "@/store/useUmiStore";
 import type { Umi } from "@metaplex-foundation/umi";
-import { base58 } from "@metaplex-foundation/umi/serializers";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import {
 	Raydium,
@@ -8,7 +7,11 @@ import {
 	parseTokenAccountResp,
 } from "@raydium-io/raydium-sdk-v2";
 import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import { type Connection, type PublicKey as Web3JsPublicKey, clusterApiUrl } from "@solana/web3.js";
+import {
+	type Connection,
+	type PublicKey as Web3JsPublicKey,
+	clusterApiUrl,
+} from "@solana/web3.js";
 
 export const txVersion = TxVersion.V0; // or TxVersion.LEGACY
 
@@ -28,7 +31,7 @@ export const initSdk = async (
 		console.warn(
 			"using free rpc node might cause unexpected error, strongly suggest uses paid rpc node",
 		);
-	console.log(`Connected to rpc ${appUmi.rpc.getEndpoint()} in ${cluster}`);
+	console.info(`Connected to rpc ${appUmi.rpc.getEndpoint()} in ${cluster}`);
 	raydium = await Raydium.load({
 		owner,
 		connection: appConnection, // Use passed-in appConnection
