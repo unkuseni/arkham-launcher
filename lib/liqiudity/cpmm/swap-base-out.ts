@@ -1,24 +1,25 @@
-import { Network } from "@/store/useUmiStore";
+import type { Network } from "@/store/useUmiStore";
 import type { Umi } from "@metaplex-foundation/umi";
 import {
 	type ApiV3PoolInfoStandardItemCpmm,
 	type CpmmKeys,
 	type CpmmRpcData,
 	CurveCalculator,
+	USDCMint,
 } from "@raydium-io/raydium-sdk-v2";
 import { NATIVE_MINT } from "@solana/spl-token";
 import { type Connection, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
-import { initSdk } from "../index";
+import { initSdk, txVersion } from "../index";
 import { isValidCpmm } from "./utils";
 
-export interface SwapParams {
+export interface SwapBaseOutParams {
 	umi: Umi;
 	connection: Connection;
 	network: Network;
 	poolIdParam?: string;
-	inputAmountParam?: BN;
-	inputMintParam?: PublicKey;
+	outputAmountParam?: BN;
+	outputMintParam?: PublicKey;
 	slippageParam?: number;
 	baseInParam?: boolean;
 	txTipConfig?: {
@@ -26,26 +27,28 @@ export interface SwapParams {
 		amount: BN;
 	};
 }
-
-export const swap = async ({
-	umi: baseUmi,
+// swapBaseOut means fixed output token amount, calculate needed input token amount
+export const swapBaseOut = async ({
+	umi,
 	connection,
 	network,
 	poolIdParam,
-	inputAmountParam,
-	inputMintParam,
+	outputAmountParam,
+	outputMintParam,
 	slippageParam,
 	baseInParam,
 	txTipConfig,
-}: SwapParams) => {
-	const raydium = await initSdk(baseUmi, connection, network, {
+}: SwapBaseOutParams) => {
+	const raydium = await initSdk(umi, connection, network, {
 		loadToken: true,
 	});
 
 	// SOL - USDC pool
 	const poolId = poolIdParam || "7JuwJuNU88gurFnyWeiyGKbFmExMWcmRZntn9imEzdny";
-	const inputAmount = inputAmountParam || new BN(100);
-	const inputMint = inputMintParam?.toBase58() || NATIVE_MINT.toBase58();
+
+	// means want to buy 1 USDC
+	const outputAmount = outputAmountParam || new BN(1000000);
+	const outputMint = outputMintParam || USDCMint;
 
 	let poolInfo: ApiV3PoolInfoStandardItemCpmm;
 	let poolKeys: CpmmKeys | undefined;
@@ -67,20 +70,23 @@ export const swap = async ({
 	}
 
 	if (
-		inputMint !== poolInfo.mintA.address &&
-		inputMint !== poolInfo.mintB.address
+		outputMint.toBase58() !== poolInfo.mintA.address &&
+		outputMint.toBase58() !== poolInfo.mintB.address
 	)
 		throw new Error("input mint does not match pool");
 
-	const baseIn = inputMint === poolInfo.mintA.address;
+	const baseIn = outputMint.toBase58() === poolInfo.mintB.address;
 
 	// swap pool mintA for mintB
-	const swapResult = CurveCalculator.swap(
-		inputAmount,
-		baseIn ? rpcData.baseReserve : rpcData.quoteReserve,
-		baseIn ? rpcData.quoteReserve : rpcData.baseReserve,
-		rpcData.configInfo!.tradeFeeRate,
-	);
+	const swapResult = CurveCalculator.swapBaseOut({
+		poolMintA: poolInfo.mintA,
+		poolMintB: poolInfo.mintB,
+		tradeFeeRate: rpcData.configInfo!.tradeFeeRate,
+		baseReserve: rpcData.baseReserve,
+		quoteReserve: rpcData.quoteReserve,
+		outputMint,
+		outputAmount,
+	});
 
 	/**
 	 * swapResult.sourceAmountSwapped -> input amount
@@ -88,45 +94,43 @@ export const swap = async ({
 	 * swapResult.tradeFee -> this swap fee, charge input mint
 	 */
 
-	const { execute } = await raydium.cpmm.swap({
+	const { execute, transaction } = await raydium.cpmm.swap({
 		poolInfo,
 		poolKeys,
-		inputAmount,
-		swapResult,
+		inputAmount: new BN(0), // if set fixedOut to true, this arguments won't be used
+		fixedOut: true,
+		swapResult: {
+			sourceAmountSwapped: swapResult.amountIn,
+			destinationAmountSwapped: outputAmount,
+		},
 		slippage: slippageParam || 0.001, // range: 1 ~ 0.0001, means 100% ~ 0.01%
 		baseIn: baseInParam || baseIn,
-		// optional: set up priority fee here
+		txVersion,
+
 		computeBudgetConfig: {
 			units: 600000,
-			microLamports: 2500000,
+			microLamports: 465915,
 		},
 
 		// optional: add transfer sol to tip account instruction. e.g sent tip to jito
 		txTipConfig: txTipConfig || {
 			address: new PublicKey("96gYZGLnJYVFmbjzopPSU6QiEV5fGqZNyN9nmNhvrZU5"),
-			amount: new BN(5000000), // 0.01 sol
+			amount: new BN(10000000), // 0.01 sol
 		},
 	});
-
 	// don't want to wait confirm, set sendAndConfirm to false or don't pass any params to execute
 	const { txId } = await execute({ sendAndConfirm: true });
-	if (network === Network.MAINNET) {
-		console.log(
-			`swapped: ${poolInfo.mintA.symbol} to ${poolInfo.mintB.symbol}:`,
-			{
-				txId: `https://explorer.solana.com/tx/${txId}`,
-			},
-		);
-	} else {
-		console.log(
-			`swapped: ${poolInfo.mintA.symbol} to ${poolInfo.mintB.symbol}:`,
-			{
-				txId: `https://explorer.solana.com/tx/${txId}?cluster=${network}`,
-			},
-		);
-	}
-	return txId;
+	console.log(
+		`swapped: ${poolInfo.mintA.symbol} to ${poolInfo.mintB.symbol}:`,
+		{
+			txId: `https://explorer.solana.com/tx/${txId}`,
+		},
+	);
+	return {
+		txId,
+		transaction,
+	};
 };
 
 /** uncomment code below to execute */
-// swap()
+// swapBaseOut()
