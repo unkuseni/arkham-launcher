@@ -21,6 +21,9 @@ export interface RemoveFromCPMMPoolParams {
 	signer: Signer;
 	poolIdParam?: string;
 	lpAmountParam?: BN;
+	txTipConfig?: {
+		amount: BN;
+	};
 }
 
 export const removeFromCPMMPool = async ({
@@ -30,6 +33,7 @@ export const removeFromCPMMPool = async ({
 	signer,
 	poolIdParam,
 	lpAmountParam,
+	txTipConfig,
 }: RemoveFromCPMMPoolParams) => {
 	if (!signer) {
 		const errorMessage = "Signer not provided.";
@@ -84,7 +88,7 @@ export const removeFromCPMMPool = async ({
 		},
 		txTipConfig: {
 			address: new PublicKey("96gYZGLnJYVFmbjzopPSU6QiEV5fGqZNyN9nmNhvrZU5"),
-			amount: new BN(10000000), // 0.01 sol
+			amount: txTipConfig?.amount || new BN(10000000), // 0.01 sol
 		},
 	});
 

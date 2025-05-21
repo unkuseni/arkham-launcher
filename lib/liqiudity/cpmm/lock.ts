@@ -18,7 +18,6 @@ export interface LockLiquidityParams {
 	poolIdParam?: string;
 	lpAmountParam?: BN;
 	txTipConfig?: {
-		address: PublicKey;
 		amount: BN;
 	};
 }
@@ -29,6 +28,7 @@ export const lockLiquidity = async ({
 	network,
 	poolIdParam,
 	lpAmountParam,
+	txTipConfig,
 }: LockLiquidityParams) => {
 	const raydium = await initSdk(umi, connection, network, {
 		loadToken: true,

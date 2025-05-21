@@ -18,7 +18,6 @@ export interface HarvestLockLiquidityParams {
 	poolIdParam?: string;
 	lpAmountParam?: BN;
 	txTipConfig?: {
-		address: PublicKey;
 		amount: BN;
 	};
 }
@@ -53,10 +52,10 @@ export const harvestLockLiquidity = async ({
 	}
 
 	if (Network.MAINNET === network) {
-		const { execute, transaction } = await raydium.cpmm.harvestLockLp({
+		const { execute } = await raydium.cpmm.harvestLockLp({
 			poolInfo,
 			nftMint: new PublicKey("CgkdQL6eRN1nxG2AmC8NFG5iboXuKtSjT4pShnspomZy"), // locked nft mint
-			lpFeeAmount: new BN(99999999),
+			lpFeeAmount: lpAmountParam || new BN(99999999),
 			txVersion,
 
 			// closeWsol: false, // default if true, if you want use wsol, you need set false
@@ -64,7 +63,7 @@ export const harvestLockLiquidity = async ({
 			// optional: add transfer sol to tip account instruction. e.g sent tip to jito
 			txTipConfig: {
 				address: new PublicKey("96gYZGLnJYVFmbjzopPSU6QiEV5fGqZNyN9nmNhvrZU5"),
-				amount: new BN(10000000), // 0.01 sol
+				amount: txTipConfig?.amount || new BN(10000000), // 0.01 sol
 			},
 		});
 
@@ -75,18 +74,18 @@ export const harvestLockLiquidity = async ({
 		return { txId };
 	}
 	// devnet
-	const { execute, transaction } = await raydium.cpmm.harvestLockLp({
+	const { execute } = await raydium.cpmm.harvestLockLp({
 		programId: DEV_LOCK_CPMM_PROGRAM,
 		authProgram: DEV_LOCK_CPMM_AUTH,
 		poolKeys,
 		poolInfo,
 		nftMint: new PublicKey("CgkdQL6eRN1nxG2AmC8NFG5iboXuKtSjT4pShnspomZy"), // locked nft mint
-		lpFeeAmount: new BN(99999999),
+		lpFeeAmount: lpAmountParam || new BN(99999999),
 		txVersion,
 		closeWsol: false, // default if true, if you want use wsol, you need set false
 		txTipConfig: {
 			address: new PublicKey("96gYZGLnJYVFmbjzopPSU6QiEV5fGqZNyN9nmNhvrZU5"),
-			amount: new BN(10000000), // 0.01 sol
+			amount: txTipConfig?.amount || new BN(10000000), // 0.01 sol
 		},
 	});
 	const { txId } = await execute({ sendAndConfirm: true });

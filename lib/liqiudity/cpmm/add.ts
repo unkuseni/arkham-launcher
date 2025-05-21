@@ -21,7 +21,10 @@ export interface AddToCPMMPoolParams {
 	network: Network;
 	signer: Signer;
 	poolIdParam?: string;
-	uiInputAmountParam?: string; // To allow customizing the input amount
+	uiInputAmountParam?: string;
+	txTipConfig?: {
+		amount: BN;
+	}; // Optional, can be used for transaction tip configuration
 }
 
 export const addToCPMMPool = async ({
@@ -31,6 +34,7 @@ export const addToCPMMPool = async ({
 	signer,
 	poolIdParam,
 	uiInputAmountParam,
+	txTipConfig,
 }: AddToCPMMPoolParams) => {
 	// Removed: const { umi, connection: getConnection, network } = useUmiStore.getState();
 
@@ -110,7 +114,7 @@ export const addToCPMMPool = async ({
 
 		txTipConfig: {
 			address: new PublicKey("96gYZGLnJYVFmbjzopPSU6QiEV5fGqZNyN9nmNhvrZU5"),
-			amount: new BN(10000000), // 0.01 sol
+			amount: txTipConfig?.amount || new BN(10000000), // 0.01 sol
 		},
 	});
 
