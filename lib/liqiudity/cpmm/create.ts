@@ -1,5 +1,5 @@
 // Top-level imports
-import useUmiStore, { type Network } from "@/store/useUmiStore"; // Added Network import
+import type { Network } from "@/store/useUmiStore"; // Added Network import
 import {
 	type Signer,
 	type Umi,
