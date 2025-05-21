@@ -29,7 +29,6 @@ export const lockLiquidity = async ({
 	network,
 	poolIdParam,
 	lpAmountParam,
-	txTipConfig,
 }: LockLiquidityParams) => {
 	const raydium = await initSdk(umi, connection, network, {
 		loadToken: true,
@@ -63,7 +62,7 @@ export const lockLiquidity = async ({
 			// authProgram: DEV_LOCK_CPMM_AUTH, // devnet
 			// poolKeys, // devnet
 			poolInfo,
-			lpAmount: lpBalance.amount,
+			lpAmount: lpAmountParam || lpBalance.amount,
 			withMetadata: true,
 			txVersion,
 		});
