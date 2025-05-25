@@ -1,6 +1,5 @@
 "use client";
 import { Coins, Droplets, House } from "lucide-react";
-import { title } from "process";
 import {
 	Sidebar,
 	SidebarContent,
