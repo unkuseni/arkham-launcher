@@ -82,8 +82,8 @@ const CreateToken = () => {
 							Create New Token
 						</CardTitle>
 						<CardDescription className="text-lg text-muted-foreground max-w-2xl mx-auto">
-							Fill in the details below to launch your new Solana token on the blockchain.
-							All fields marked with * are required.
+							Fill in the details below to launch your new Solana token on the
+							blockchain. All fields marked with * are required.
 						</CardDescription>
 					</CardHeader>
 					<CardContent className="px-8 md:px-12 pb-12">
@@ -198,7 +198,8 @@ const TokenForm = () => {
 			setShowTags(false);
 		} catch (error: unknown) {
 			console.error("Token creation error:", error);
-			const errorMessage = error instanceof Error ? error.message : "Failed to create token.";
+			const errorMessage =
+				error instanceof Error ? error.message : "Failed to create token.";
 			form.setError("root", {
 				type: "manual",
 				message: errorMessage,
@@ -235,8 +236,12 @@ const TokenForm = () => {
 								<div className="w-5 h-5 rounded-lg bg-gradient-to-br from-primary to-primary/80" />
 							</div>
 							<div>
-								<h2 className="text-2xl font-bold text-foreground">Basic Information</h2>
-								<p className="text-sm text-muted-foreground">Essential details for your token</p>
+								<h2 className="text-2xl font-bold text-foreground">
+									Basic Information
+								</h2>
+								<p className="text-sm text-muted-foreground">
+									Essential details for your token
+								</p>
 							</div>
 						</div>
 
@@ -277,7 +282,9 @@ const TokenForm = () => {
 												placeholder="e.g. MAT"
 												{...field}
 												className="h-12 text-base uppercase"
-												onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+												onChange={(e) =>
+													field.onChange(e.target.value.toUpperCase())
+												}
 											/>
 										</FormControl>
 										<FormDescription>
@@ -338,14 +345,17 @@ const TokenForm = () => {
 												placeholder="1,000,000,000"
 												value={
 													field.value === undefined ||
-														field.value === null ||
-														Number.isNaN(Number(field.value))
+													field.value === null ||
+													Number.isNaN(Number(field.value))
 														? ""
 														: Number(field.value).toLocaleString()
 												}
 												onChange={(e) => {
 													const inputValue = e.target.value;
-													const numericString = inputValue.replace(/[^0-9]/g, "");
+													const numericString = inputValue.replace(
+														/[^0-9]/g,
+														"",
+													);
 
 													if (numericString === "") {
 														field.onChange(undefined);
@@ -379,8 +389,12 @@ const TokenForm = () => {
 								<div className="w-5 h-5 rounded-lg bg-gradient-to-br from-blue-500 to-blue-500/80" />
 							</div>
 							<div>
-								<h2 className="text-2xl font-bold text-foreground">Description & Media</h2>
-								<p className="text-sm text-muted-foreground">Tell your story and showcase your brand</p>
+								<h2 className="text-2xl font-bold text-foreground">
+									Description & Media
+								</h2>
+								<p className="text-sm text-muted-foreground">
+									Tell your story and showcase your brand
+								</p>
 							</div>
 						</div>
 
@@ -435,8 +449,18 @@ const TokenForm = () => {
 													) : (
 														<div className="w-52 h-52 rounded-2xl border-2 border-dashed border-primary/30 flex flex-col items-center justify-center text-center p-8 hover:border-primary/60 hover:bg-primary/5 transition-all duration-300 cursor-pointer bg-gradient-to-br from-primary/5 to-transparent">
 															<div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-																<svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-																	<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+																<svg
+																	className="w-8 h-8 text-primary"
+																	fill="none"
+																	stroke="currentColor"
+																	viewBox="0 0 24 24"
+																>
+																	<path
+																		strokeLinecap="round"
+																		strokeLinejoin="round"
+																		strokeWidth={2}
+																		d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+																	/>
 																</svg>
 															</div>
 															<span className="text-base font-medium text-foreground mb-2">
@@ -481,8 +505,12 @@ const TokenForm = () => {
 									<div className="w-5 h-5 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-500/80" />
 								</div>
 								<div>
-									<h2 className="text-2xl font-bold text-foreground">Social Links</h2>
-									<p className="text-sm text-muted-foreground">Connect with your community</p>
+									<h2 className="text-2xl font-bold text-foreground">
+										Social Links
+									</h2>
+									<p className="text-sm text-muted-foreground">
+										Connect with your community
+									</p>
 								</div>
 							</div>
 							<Button
@@ -578,7 +606,8 @@ const TokenForm = () => {
 								</div>
 								<div className="mt-6 p-4 bg-primary/5 rounded-xl border border-primary/10">
 									<p className="text-sm text-muted-foreground text-center">
-										💡 Adding social links helps build trust and allows your community to find and connect with your project
+										💡 Adding social links helps build trust and allows your
+										community to find and connect with your project
 									</p>
 								</div>
 							</Card>
@@ -592,8 +621,12 @@ const TokenForm = () => {
 								<div className="w-5 h-5 rounded-lg bg-gradient-to-br from-purple-500 to-purple-500/80" />
 							</div>
 							<div className="flex-1">
-								<h2 className="text-2xl font-bold text-foreground">Tags & Categories</h2>
-								<p className="text-sm text-muted-foreground">Help users discover your token</p>
+								<h2 className="text-2xl font-bold text-foreground">
+									Tags & Categories
+								</h2>
+								<p className="text-sm text-muted-foreground">
+									Help users discover your token
+								</p>
 							</div>
 							<Button
 								type="button"
@@ -604,15 +637,35 @@ const TokenForm = () => {
 							>
 								{showTags ? (
 									<>
-										<svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+										<svg
+											className="w-4 h-4 mr-2"
+											fill="none"
+											stroke="currentColor"
+											viewBox="0 0 24 24"
+										>
+											<path
+												strokeLinecap="round"
+												strokeLinejoin="round"
+												strokeWidth={2}
+												d="M6 18L18 6M6 6l12 12"
+											/>
 										</svg>
 										Hide Tags
 									</>
 								) : (
 									<>
-										<svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+										<svg
+											className="w-4 h-4 mr-2"
+											fill="none"
+											stroke="currentColor"
+											viewBox="0 0 24 24"
+										>
+											<path
+												strokeLinecap="round"
+												strokeLinejoin="round"
+												strokeWidth={2}
+												d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+											/>
 										</svg>
 										Add Tags
 									</>
@@ -638,7 +691,9 @@ const TokenForm = () => {
 																	{...itemField}
 																	value={itemField.value?.value || ""}
 																	onChange={(e) =>
-																		itemField.onChange({ value: e.target.value })
+																		itemField.onChange({
+																			value: e.target.value,
+																		})
 																	}
 																	className="h-12 text-base border-2 border-border/50 focus:border-purple-500/50 bg-background/50 backdrop-blur-sm transition-colors"
 																/>
@@ -649,11 +704,24 @@ const TokenForm = () => {
 															variant="outline"
 															size="sm"
 															onClick={() => removeTag(index)}
-															disabled={tagFields.length === 1 && itemField.value?.value === ""}
+															disabled={
+																tagFields.length === 1 &&
+																itemField.value?.value === ""
+															}
 															className="h-12 px-4 border-2 border-destructive/20 text-destructive hover:border-destructive/40 hover:bg-destructive/5 transition-colors"
 														>
-															<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-																<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+															<svg
+																className="w-4 h-4"
+																fill="none"
+																stroke="currentColor"
+																viewBox="0 0 24 24"
+															>
+																<path
+																	strokeLinecap="round"
+																	strokeLinejoin="round"
+																	strokeWidth={2}
+																	d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+																/>
 															</svg>
 														</Button>
 													</div>
@@ -671,8 +739,18 @@ const TokenForm = () => {
 											onClick={() => appendTag({ value: "" })}
 											className="h-12 px-6 bg-purple-500/10 hover:bg-purple-500/20 border-2 border-purple-500/20 hover:border-purple-500/30 text-purple-700 dark:text-purple-300 transition-colors"
 										>
-											<svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-												<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+											<svg
+												className="w-4 h-4 mr-2"
+												fill="none"
+												stroke="currentColor"
+												viewBox="0 0 24 24"
+											>
+												<path
+													strokeLinecap="round"
+													strokeLinejoin="round"
+													strokeWidth={2}
+													d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+												/>
 											</svg>
 											Add Another Tag
 										</Button>
@@ -682,14 +760,27 @@ const TokenForm = () => {
 								<div className="mt-8 p-6 bg-gradient-to-r from-purple-500/10 to-blue-500/10 rounded-xl border border-purple-500/20">
 									<div className="flex items-start gap-3">
 										<div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-											<svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-												<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+											<svg
+												className="w-4 h-4 text-purple-600"
+												fill="none"
+												stroke="currentColor"
+												viewBox="0 0 24 24"
+											>
+												<path
+													strokeLinecap="round"
+													strokeLinejoin="round"
+													strokeWidth={2}
+													d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+												/>
 											</svg>
 										</div>
 										<div>
-											<p className="text-sm font-medium text-foreground mb-1">Popular Tag Categories</p>
+											<p className="text-sm font-medium text-foreground mb-1">
+												Popular Tag Categories
+											</p>
 											<p className="text-xs text-muted-foreground">
-												DeFi • Gaming • Meme • Utility • NFT • DAO • Staking • Governance • Social • AI • Music • Art
+												DeFi • Gaming • Meme • Utility • NFT • DAO • Staking •
+												Governance • Social • AI • Music • Art
 											</p>
 										</div>
 									</div>
@@ -705,8 +796,12 @@ const TokenForm = () => {
 								<div className="w-5 h-5 rounded-lg bg-gradient-to-br from-orange-500 to-orange-500/80" />
 							</div>
 							<div>
-								<h2 className="text-2xl font-bold text-foreground">Advanced Settings</h2>
-								<p className="text-sm text-muted-foreground">Customize address and permissions</p>
+								<h2 className="text-2xl font-bold text-foreground">
+									Advanced Settings
+								</h2>
+								<p className="text-sm text-muted-foreground">
+									Customize address and permissions
+								</p>
 							</div>
 						</div>
 
@@ -714,13 +809,30 @@ const TokenForm = () => {
 						<Card className="p-8 backdrop-blur-sm bg-gradient-to-br from-orange-500/5 via-transparent to-transparent border-2 border-orange-500/10 shadow-xl">
 							<div className="mb-6">
 								<h3 className="text-lg font-semibold text-foreground mb-2 flex items-center gap-2">
-									<svg className="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-										<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+									<svg
+										className="w-5 h-5 text-orange-500"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path
+											strokeLinecap="round"
+											strokeLinejoin="round"
+											strokeWidth={2}
+											d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+										/>
+										<path
+											strokeLinecap="round"
+											strokeLinejoin="round"
+											strokeWidth={2}
+											d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+										/>
 									</svg>
 									Custom Address Pattern
 								</h3>
-								<p className="text-sm text-muted-foreground">Generate a vanity address with your preferred pattern</p>
+								<p className="text-sm text-muted-foreground">
+									Generate a vanity address with your preferred pattern
+								</p>
 							</div>
 
 							<FormField
@@ -728,7 +840,9 @@ const TokenForm = () => {
 								name="customAddress"
 								render={({ field }) => (
 									<FormItem>
-										<FormLabel className="text-base font-medium">Pattern Text</FormLabel>
+										<FormLabel className="text-base font-medium">
+											Pattern Text
+										</FormLabel>
 										<div className="flex gap-4">
 											<div className="flex-1">
 												<FormControl>
@@ -736,7 +850,9 @@ const TokenForm = () => {
 														placeholder="e.g. MYTKN"
 														{...field}
 														className="h-12 uppercase text-base border-2 border-border/50 focus:border-orange-500/50 bg-background/50 backdrop-blur-sm transition-colors"
-														onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+														onChange={(e) =>
+															field.onChange(e.target.value.toUpperCase())
+														}
 													/>
 												</FormControl>
 											</div>
@@ -757,7 +873,8 @@ const TokenForm = () => {
 											/>
 										</div>
 										<FormDescription>
-											Add a custom prefix or suffix to your token address (2-5 characters). This may take longer to generate.
+											Add a custom prefix or suffix to your token address (2-5
+											characters). This may take longer to generate.
 										</FormDescription>
 										<FormMessage />
 									</FormItem>
@@ -769,13 +886,24 @@ const TokenForm = () => {
 						<Card className="p-8 backdrop-blur-sm bg-gradient-to-br from-red-500/5 via-transparent to-transparent border-2 border-red-500/10 shadow-xl">
 							<div className="mb-8">
 								<h3 className="text-lg font-semibold text-foreground mb-2 flex items-center gap-2">
-									<svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+									<svg
+										className="w-5 h-5 text-red-500"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path
+											strokeLinecap="round"
+											strokeLinejoin="round"
+											strokeWidth={2}
+											d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+										/>
 									</svg>
 									Token Permissions & Security
 								</h3>
 								<p className="text-sm text-muted-foreground">
-									Enhance security and decentralization by revoking authorities. Once revoked, these actions cannot be undone.
+									Enhance security and decentralization by revoking authorities.
+									Once revoked, these actions cannot be undone.
 								</p>
 							</div>
 
@@ -799,7 +927,8 @@ const TokenForm = () => {
 															🚫 Revoke Mint Authority
 														</FormLabel>
 														<FormDescription className="text-sm leading-relaxed">
-															Permanently prevents creating additional tokens. Ensures fixed supply and builds trust.
+															Permanently prevents creating additional tokens.
+															Ensures fixed supply and builds trust.
 														</FormDescription>
 													</div>
 												</div>
@@ -828,7 +957,8 @@ const TokenForm = () => {
 															🔒 Revoke Update Authority
 														</FormLabel>
 														<FormDescription className="text-sm leading-relaxed">
-															Prevents modifying token metadata. Makes name, symbol, and image immutable.
+															Prevents modifying token metadata. Makes name,
+															symbol, and image immutable.
 														</FormDescription>
 													</div>
 												</div>
@@ -857,7 +987,8 @@ const TokenForm = () => {
 															❄️ Revoke Freeze Authority
 														</FormLabel>
 														<FormDescription className="text-sm leading-relaxed">
-															Prevents freezing token accounts. Ensures users maintain full control of their tokens.
+															Prevents freezing token accounts. Ensures users
+															maintain full control of their tokens.
 														</FormDescription>
 													</div>
 												</div>
@@ -871,14 +1002,27 @@ const TokenForm = () => {
 							<div className="mt-8 p-6 bg-gradient-to-r from-amber-500/10 to-orange-500/10 rounded-xl border border-amber-500/20">
 								<div className="flex items-start gap-3">
 									<div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-										<svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+										<svg
+											className="w-4 h-4 text-amber-600"
+											fill="none"
+											stroke="currentColor"
+											viewBox="0 0 24 24"
+										>
+											<path
+												strokeLinecap="round"
+												strokeLinejoin="round"
+												strokeWidth={2}
+												d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+											/>
 										</svg>
 									</div>
 									<div>
-										<p className="text-sm font-medium text-foreground mb-1">⚠️ Important Security Notice</p>
+										<p className="text-sm font-medium text-foreground mb-1">
+											⚠️ Important Security Notice
+										</p>
 										<p className="text-xs text-muted-foreground">
-											Revoking authorities is permanent and cannot be undone. Consider your long-term token strategy before proceeding.
+											Revoking authorities is permanent and cannot be undone.
+											Consider your long-term token strategy before proceeding.
 										</p>
 									</div>
 								</div>
@@ -891,12 +1035,24 @@ const TokenForm = () => {
 						<Card className="p-6 border-2 border-destructive/50 bg-gradient-to-r from-destructive/10 to-red-500/10 backdrop-blur-sm shadow-xl">
 							<div className="flex items-center gap-4">
 								<div className="w-12 h-12 rounded-xl bg-destructive/20 flex items-center justify-center flex-shrink-0">
-									<svg className="w-6 h-6 text-destructive" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+									<svg
+										className="w-6 h-6 text-destructive"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path
+											strokeLinecap="round"
+											strokeLinejoin="round"
+											strokeWidth={2}
+											d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+										/>
 									</svg>
 								</div>
 								<div>
-									<h4 className="text-base font-semibold text-destructive mb-1">Token Creation Failed</h4>
+									<h4 className="text-base font-semibold text-destructive mb-1">
+										Token Creation Failed
+									</h4>
 									<FormMessage className="text-sm text-destructive/80">
 										{form.formState.errors.root.message}
 									</FormMessage>
@@ -941,7 +1097,8 @@ const TokenForm = () => {
 									<div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" />
 								</div>
 								<p className="text-sm font-medium text-foreground">
-									Deploying to Solana blockchain and uploading metadata to IPFS...
+									Deploying to Solana blockchain and uploading metadata to
+									IPFS...
 								</p>
 							</div>
 							<div className="mt-4 bg-muted/50 rounded-full h-2 overflow-hidden">

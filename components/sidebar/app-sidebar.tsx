@@ -80,8 +80,8 @@ const data = [
 				title: "View Pool Info",
 				url: "view-pool-info",
 			},
-		]
-	}
+		],
+	},
 ];
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {

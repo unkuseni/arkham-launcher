@@ -4,7 +4,7 @@ import {
 	type MintToMultipleResult,
 	batchRecipients,
 	mintSPLTokens,
-	mintSPLTokensToMultiple
+	mintSPLTokensToMultiple,
 } from "@/lib/token/mint-token";
 import useUmiStore from "@/store/useUmiStore";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -56,16 +56,24 @@ const singleMintSchema = z.object({
 // Zod schema for multi mint form
 const multiMintSchema = z.object({
 	mintAddress: z.string().nonempty("Mint address is required"),
-	recipients: z.array(z.object({
-		address: z.string().nonempty("Address is required"),
-		amount: z.number().min(1, "Amount must be at least 1"),
-	})).min(1, "At least one recipient is required"),
+	recipients: z
+		.array(
+			z.object({
+				address: z.string().nonempty("Address is required"),
+				amount: z.number().min(1, "Amount must be at least 1"),
+			}),
+		)
+		.min(1, "At least one recipient is required"),
 	bulkInput: z.string().optional(),
 });
 
 type SingleMintValues = z.infer<typeof singleMintSchema>;
 type MultiMintValues = z.infer<typeof multiMintSchema>;
-type MintResult = { signature: string; amountMinted: bigint; recipientAta: string };
+type MintResult = {
+	signature: string;
+	amountMinted: bigint;
+	recipientAta: string;
+};
 
 export default function MintTokens() {
 	return (
@@ -73,9 +81,7 @@ export default function MintTokens() {
 			<article className="mx-auto text-center space-y-2">
 				<div className="flex items-center justify-center gap-2 mb-4">
 					<Coins className="h-8 w-8 text-primary" />
-					<h1 className="text-4xl font-bold font-inter">
-						Mint SPL Tokens
-					</h1>
+					<h1 className="text-4xl font-bold font-inter">Mint SPL Tokens</h1>
 				</div>
 				<p className="text-muted-foreground text-lg">
 					Mint tokens to single or multiple recipients with ease
@@ -119,7 +125,8 @@ export default function MintTokens() {
 								Mint to Multiple Recipients
 							</CardTitle>
 							<CardDescription>
-								Mint tokens to multiple recipients in a single transaction. Maximum 20 recipients per batch.
+								Mint tokens to multiple recipients in a single transaction.
+								Maximum 20 recipients per batch.
 							</CardDescription>
 						</CardHeader>
 						<CardContent>
@@ -343,7 +350,10 @@ function MultiMintForm() {
 	}, [form, connection]);
 
 	const parseBulkInput = (input: string): MintToMultipleRecipient[] => {
-		const lines = input.trim().split('\n').filter(line => line.trim());
+		const lines = input
+			.trim()
+			.split("\n")
+			.filter((line) => line.trim());
 		const recipients: MintToMultipleRecipient[] = [];
 
 		for (const line of lines) {
@@ -381,7 +391,7 @@ function MultiMintForm() {
 	const onSubmit = async (values: MultiMintValues) => {
 		setIsProcessing(true);
 		try {
-			const adjustedRecipients = values.recipients.map(recipient => ({
+			const adjustedRecipients = values.recipients.map((recipient) => ({
 				...recipient,
 				amount: recipient.amount * 10 ** decimals,
 			}));
@@ -517,7 +527,9 @@ function MultiMintForm() {
 													<Input
 														type="number"
 														{...field}
-														onChange={(e) => field.onChange(Number(e.target.value))}
+														onChange={(e) =>
+															field.onChange(Number(e.target.value))
+														}
 														placeholder="Amount"
 														className="text-sm"
 													/>
@@ -584,9 +596,7 @@ function MultiMintForm() {
 							</div>
 							<div className="space-y-1">
 								<p className="text-sm font-medium">Recipients:</p>
-								<Badge variant="outline">
-									{result?.recipients.length}
-								</Badge>
+								<Badge variant="outline">{result?.recipients.length}</Badge>
 							</div>
 						</div>
 
@@ -602,7 +612,10 @@ function MultiMintForm() {
 								<p className="text-sm font-medium">Successful Recipients:</p>
 								<div className="max-h-48 overflow-y-auto space-y-1">
 									{result.recipients.map((recipient) => (
-										<div key={`${recipient.address}-${recipient.amountMinted}`} className="text-xs bg-muted p-2 rounded flex justify-between items-center">
+										<div
+											key={`${recipient.address}-${recipient.amountMinted}`}
+											className="text-xs bg-muted p-2 rounded flex justify-between items-center"
+										>
 											<span className="font-mono truncate flex-1 mr-2">
 												{recipient.address}
 											</span>
@@ -617,12 +630,21 @@ function MultiMintForm() {
 
 						{result?.failedRecipients && result.failedRecipients.length > 0 && (
 							<div className="space-y-2">
-								<p className="text-sm font-medium text-red-600">Failed Recipients:</p>
+								<p className="text-sm font-medium text-red-600">
+									Failed Recipients:
+								</p>
 								<div className="max-h-32 overflow-y-auto space-y-1">
 									{result.failedRecipients.map((failed) => (
-										<div key={`failed-${failed.address}`} className="text-xs bg-red-50 dark:bg-red-900/20 p-2 rounded">
-											<p className="font-mono text-red-800 dark:text-red-200">{failed.address}</p>
-											<p className="text-red-600 dark:text-red-400">{failed.error}</p>
+										<div
+											key={`failed-${failed.address}`}
+											className="text-xs bg-red-50 dark:bg-red-900/20 p-2 rounded"
+										>
+											<p className="font-mono text-red-800 dark:text-red-200">
+												{failed.address}
+											</p>
+											<p className="text-red-600 dark:text-red-400">
+												{failed.error}
+											</p>
 										</div>
 									))}
 								</div>

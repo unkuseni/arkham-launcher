@@ -11,7 +11,14 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import useUmiStore from "@/store/useUmiStore";
-import { CheckCircle, Copy, ExternalLink, Rocket, Sparkles, Trophy } from "lucide-react";
+import {
+	CheckCircle,
+	Copy,
+	ExternalLink,
+	Rocket,
+	Sparkles,
+	Trophy,
+} from "lucide-react";
 import { useState } from "react";
 
 interface TokenDetails {
@@ -59,7 +66,7 @@ const TokenSuccessModal = ({
 			setCopiedField(fieldName);
 			setTimeout(() => setCopiedField(null), 2000);
 		} catch (err) {
-			console.error('Failed to copy: ', err);
+			console.error("Failed to copy: ", err);
 		}
 	};
 
@@ -110,7 +117,9 @@ const TokenSuccessModal = ({
 					</DialogDescription>
 				</DialogHeader>
 
-				<div className="relative z-10 space-y-6 sm:space-y-8 px-1 sm:px-2">					{/* Token Image and Basic Info Card */}
+				<div className="relative z-10 space-y-6 sm:space-y-8 px-1 sm:px-2">
+					{" "}
+					{/* Token Image and Basic Info Card */}
 					<div className="p-4 sm:p-6 lg:p-8 rounded-2xl bg-gradient-to-br from-card/80 via-card/60 to-card/40 backdrop-blur-sm border-2 border-primary/10 shadow-xl">
 						<div className="flex flex-col items-center gap-4 sm:gap-6 lg:gap-8 lg:flex-row">
 							{tokenDetails.imageUrl ? (
@@ -133,26 +142,36 @@ const TokenSuccessModal = ({
 
 							<div className="flex-1 space-y-3 sm:space-y-4 text-center lg:text-left w-full min-w-0">
 								<div className="space-y-2">
-									<h3 className="text-xl sm:text-2xl font-bold text-foreground break-words">{tokenDetails.name}</h3>
-									<Badge variant="secondary" className="text-base sm:text-lg px-3 py-1 sm:px-4 sm:py-2 bg-gradient-to-r from-primary/20 to-blue-500/20 border border-primary/30">
+									<h3 className="text-xl sm:text-2xl font-bold text-foreground break-words">
+										{tokenDetails.name}
+									</h3>
+									<Badge
+										variant="secondary"
+										className="text-base sm:text-lg px-3 py-1 sm:px-4 sm:py-2 bg-gradient-to-r from-primary/20 to-blue-500/20 border border-primary/30"
+									>
 										${tokenDetails.ticker}
 									</Badge>
 								</div>
 
 								<div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-sm">
 									<div className="p-3 rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-500/5 border border-blue-500/20">
-										<p className="text-blue-600 font-medium mb-1">Total Supply</p>
-										<p className="text-base sm:text-lg font-bold text-foreground break-all">{tokenDetails.supply.toLocaleString()}</p>
+										<p className="text-blue-600 font-medium mb-1">
+											Total Supply
+										</p>
+										<p className="text-base sm:text-lg font-bold text-foreground break-all">
+											{tokenDetails.supply.toLocaleString()}
+										</p>
 									</div>
 									<div className="p-3 rounded-xl bg-gradient-to-br from-purple-500/10 to-purple-500/5 border border-purple-500/20">
 										<p className="text-purple-600 font-medium mb-1">Decimals</p>
-										<p className="text-base sm:text-lg font-bold text-foreground">{tokenDetails.decimals}</p>
+										<p className="text-base sm:text-lg font-bold text-foreground">
+											{tokenDetails.decimals}
+										</p>
 									</div>
 								</div>
 							</div>
 						</div>
 					</div>
-
 					{/* Description Card */}
 					{tokenDetails.description && (
 						<div className="p-4 sm:p-6 rounded-2xl bg-gradient-to-br from-muted/50 to-muted/30 backdrop-blur-sm border border-border/50 shadow-lg">
@@ -160,14 +179,15 @@ const TokenSuccessModal = ({
 								<div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-indigo-500/20 to-indigo-500/10 flex items-center justify-center flex-shrink-0">
 									<Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-indigo-600" />
 								</div>
-								<h4 className="text-base sm:text-lg font-semibold text-foreground">Token Description</h4>
+								<h4 className="text-base sm:text-lg font-semibold text-foreground">
+									Token Description
+								</h4>
 							</div>
 							<p className="text-sm sm:text-base text-muted-foreground leading-relaxed whitespace-pre-wrap break-words">
 								{tokenDetails.description}
 							</p>
 						</div>
 					)}
-
 					{/* Links and Resources */}
 					<div className="grid gap-3 sm:gap-4">
 						{tokenDetails.pinataUrl && (
@@ -178,8 +198,12 @@ const TokenSuccessModal = ({
 											<ExternalLink className="h-4 w-4 sm:h-5 sm:w-5 text-orange-600" />
 										</div>
 										<div className="min-w-0 flex-1">
-											<p className="font-medium text-foreground text-sm sm:text-base">Metadata (IPFS)</p>
-											<p className="text-xs sm:text-sm text-muted-foreground">View token metadata on IPFS</p>
+											<p className="font-medium text-foreground text-sm sm:text-base">
+												Metadata (IPFS)
+											</p>
+											<p className="text-xs sm:text-sm text-muted-foreground">
+												View token metadata on IPFS
+											</p>
 										</div>
 									</div>
 									<Button
@@ -193,27 +217,37 @@ const TokenSuccessModal = ({
 								</div>
 							</div>
 						)}
-					</div>					{/* Transaction Details */}
+					</div>{" "}
+					{/* Transaction Details */}
 					{tokenDetails.txResult && (
 						<div className="p-4 sm:p-6 rounded-2xl bg-gradient-to-br from-slate-500/5 to-slate-500/3 backdrop-blur-sm border border-border/50 shadow-lg">
 							<div className="flex items-center gap-3 mb-4 sm:mb-6">
 								<div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-green-500/20 to-green-500/10 flex items-center justify-center flex-shrink-0">
 									<CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-600" />
 								</div>
-								<h4 className="text-base sm:text-lg font-semibold text-foreground">Blockchain Details</h4>
+								<h4 className="text-base sm:text-lg font-semibold text-foreground">
+									Blockchain Details
+								</h4>
 							</div>
 
 							<div className="space-y-3 sm:space-y-4">
 								{tokenDetails.txResult.mintAddress && (
 									<div className="p-3 sm:p-4 rounded-xl bg-gradient-to-r from-blue-500/5 to-blue-500/3 border border-blue-500/20 group hover:border-blue-500/40 transition-colors">
 										<div className="flex items-center justify-between mb-2 gap-2">
-											<p className="text-xs sm:text-sm font-medium text-blue-600 flex-shrink-0">Mint Address</p>
+											<p className="text-xs sm:text-sm font-medium text-blue-600 flex-shrink-0">
+												Mint Address
+											</p>
 											<div className="flex gap-1 sm:gap-2 flex-shrink-0">
 												<Button
 													variant="ghost"
 													size="sm"
 													className="h-7 w-7 sm:h-8 sm:w-8 p-0 text-blue-600 hover:bg-blue-500/10"
-													onClick={() => copyToClipboard(tokenDetails.txResult?.mintAddress || "", "mint")}
+													onClick={() =>
+														copyToClipboard(
+															tokenDetails.txResult?.mintAddress || "",
+															"mint",
+														)
+													}
 													title="Copy address"
 												>
 													{copiedField === "mint" ? (
@@ -226,7 +260,13 @@ const TokenSuccessModal = ({
 													variant="ghost"
 													size="sm"
 													className="h-7 w-7 sm:h-8 sm:w-8 p-0 text-blue-600 hover:bg-blue-500/10"
-													onClick={() => openInNewTab(buildExplorerUrl(`address/${tokenDetails.txResult?.mintAddress}`))}
+													onClick={() =>
+														openInNewTab(
+															buildExplorerUrl(
+																`address/${tokenDetails.txResult?.mintAddress}`,
+															),
+														)
+													}
 													title="View on Solana Explorer"
 												>
 													<ExternalLink className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -242,13 +282,20 @@ const TokenSuccessModal = ({
 								{tokenDetails.txResult.tokenAddress && (
 									<div className="p-3 sm:p-4 rounded-xl bg-gradient-to-r from-purple-500/5 to-purple-500/3 border border-purple-500/20 group hover:border-purple-500/40 transition-colors">
 										<div className="flex items-center justify-between mb-2 gap-2">
-											<p className="text-xs sm:text-sm font-medium text-purple-600 flex-shrink-0">Token Address</p>
+											<p className="text-xs sm:text-sm font-medium text-purple-600 flex-shrink-0">
+												Token Address
+											</p>
 											<div className="flex gap-1 sm:gap-2 flex-shrink-0">
 												<Button
 													variant="ghost"
 													size="sm"
 													className="h-7 w-7 sm:h-8 sm:w-8 p-0 text-purple-600 hover:bg-purple-500/10"
-													onClick={() => copyToClipboard(tokenDetails.txResult?.tokenAddress || "", "token")}
+													onClick={() =>
+														copyToClipboard(
+															tokenDetails.txResult?.tokenAddress || "",
+															"token",
+														)
+													}
 													title="Copy address"
 												>
 													{copiedField === "token" ? (
@@ -261,7 +308,13 @@ const TokenSuccessModal = ({
 													variant="ghost"
 													size="sm"
 													className="h-7 w-7 sm:h-8 sm:w-8 p-0 text-purple-600 hover:bg-purple-500/10"
-													onClick={() => openInNewTab(buildExplorerUrl(`address/${tokenDetails.txResult?.tokenAddress}`))}
+													onClick={() =>
+														openInNewTab(
+															buildExplorerUrl(
+																`address/${tokenDetails.txResult?.tokenAddress}`,
+															),
+														)
+													}
 													title="View on Solana Explorer"
 												>
 													<ExternalLink className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -277,13 +330,20 @@ const TokenSuccessModal = ({
 								{tokenDetails.txResult.signature && (
 									<div className="p-3 sm:p-4 rounded-xl bg-gradient-to-r from-green-500/5 to-green-500/3 border border-green-500/20 group hover:border-green-500/40 transition-colors">
 										<div className="flex items-center justify-between mb-2 gap-2">
-											<p className="text-xs sm:text-sm font-medium text-green-600 flex-shrink-0">Transaction Signature</p>
+											<p className="text-xs sm:text-sm font-medium text-green-600 flex-shrink-0">
+												Transaction Signature
+											</p>
 											<div className="flex gap-1 sm:gap-2 flex-shrink-0">
 												<Button
 													variant="ghost"
 													size="sm"
 													className="h-7 w-7 sm:h-8 sm:w-8 p-0 text-green-600 hover:bg-green-500/10"
-													onClick={() => copyToClipboard(tokenDetails.txResult?.signature || "", "signature")}
+													onClick={() =>
+														copyToClipboard(
+															tokenDetails.txResult?.signature || "",
+															"signature",
+														)
+													}
 													title="Copy signature"
 												>
 													{copiedField === "signature" ? (
@@ -296,7 +356,13 @@ const TokenSuccessModal = ({
 													variant="ghost"
 													size="sm"
 													className="h-7 w-7 sm:h-8 sm:w-8 p-0 text-green-600 hover:bg-green-500/10"
-													onClick={() => openInNewTab(buildExplorerUrl(`tx/${tokenDetails.txResult?.signature}`))}
+													onClick={() =>
+														openInNewTab(
+															buildExplorerUrl(
+																`tx/${tokenDetails.txResult?.signature}`,
+															),
+														)
+													}
 													title="View transaction on Solana Explorer"
 												>
 													<ExternalLink className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -325,7 +391,13 @@ const TokenSuccessModal = ({
 								type="button"
 								variant="outline"
 								className="flex-1 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-blue-500/30 hover:border-blue-500/50 text-blue-700 dark:text-blue-300 text-sm sm:text-base"
-								onClick={() => openInNewTab(buildExplorerUrl(`address/${tokenDetails.txResult?.mintAddress}`))}
+								onClick={() =>
+									openInNewTab(
+										buildExplorerUrl(
+											`address/${tokenDetails.txResult?.mintAddress}`,
+										),
+									)
+								}
 							>
 								<ExternalLink className="h-4 w-4 mr-2 flex-shrink-0" />
 								<span className="truncate">View on Explorer</span>

@@ -1,5 +1,9 @@
 "use client";
-import { type BurnTokenParams, burnAllTokens, burnSPLTokens } from "@/lib/token/burn-token";
+import {
+	type BurnTokenParams,
+	burnAllTokens,
+	burnSPLTokens,
+} from "@/lib/token/burn-token";
 import useUmiStore from "@/store/useUmiStore";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { findAssociatedTokenPda } from "@metaplex-foundation/mpl-toolbox";
@@ -64,16 +68,16 @@ export default function BurnTokens() {
 			<article className="mx-auto text-center space-y-2">
 				<div className="flex items-center justify-center gap-2 mb-4">
 					<Flame className="h-8 w-8 text-red-500" />
-					<h1 className="text-4xl font-bold font-inter">
-						Burn SPL Tokens
-					</h1>
+					<h1 className="text-4xl font-bold font-inter">Burn SPL Tokens</h1>
 				</div>
 				<p className="text-muted-foreground text-lg">
 					Permanently destroy tokens from your wallet or specified accounts
 				</p>
 				<div className="flex items-center justify-center gap-2 text-amber-600">
 					<AlertTriangle className="h-4 w-4" />
-					<p className="text-sm font-medium">Warning: Burned tokens cannot be recovered</p>
+					<p className="text-sm font-medium">
+						Warning: Burned tokens cannot be recovered
+					</p>
 				</div>
 			</article>
 
@@ -97,7 +101,8 @@ export default function BurnTokens() {
 								Burn Specific Amount
 							</CardTitle>
 							<CardDescription>
-								Burn a specific amount of tokens from your wallet or specified account.
+								Burn a specific amount of tokens from your wallet or specified
+								account.
 							</CardDescription>
 						</CardHeader>
 						<CardContent>
@@ -114,7 +119,8 @@ export default function BurnTokens() {
 								Burn All Tokens
 							</CardTitle>
 							<CardDescription>
-								Burn all tokens from your wallet or specified account. This action is irreversible.
+								Burn all tokens from your wallet or specified account. This
+								action is irreversible.
 							</CardDescription>
 						</CardHeader>
 						<CardContent>
@@ -144,7 +150,10 @@ function BurnForm() {
 
 	useEffect(() => {
 		const sub = form.watch(async (vals, { name }) => {
-			if ((name === "mintAddress" || name === "ownerAddress") && vals.mintAddress) {
+			if (
+				(name === "mintAddress" || name === "ownerAddress") &&
+				vals.mintAddress
+			) {
 				try {
 					const mintPubkey = new PublicKey(vals.mintAddress);
 					const info = await getMint(connection, mintPubkey);
@@ -162,7 +171,10 @@ function BurnForm() {
 						});
 
 						try {
-							const tokenAccount = await getAccount(connection, new PublicKey(associatedTokenAddress[0]));
+							const tokenAccount = await getAccount(
+								connection,
+								new PublicKey(associatedTokenAddress[0]),
+							);
 							setTokenBalance(tokenAccount.amount);
 						} catch {
 							setTokenBalance(BigInt(0));
@@ -195,7 +207,7 @@ function BurnForm() {
 
 	const setMaxAmount = () => {
 		if (tokenBalance !== null && decimals > 0) {
-			const maxAmount = Number(tokenBalance) / (10 ** decimals);
+			const maxAmount = Number(tokenBalance) / 10 ** decimals;
 			form.setValue("amount", maxAmount);
 		}
 	};
@@ -226,7 +238,8 @@ function BurnForm() {
 									)}
 									{tokenBalance !== null && (
 										<Badge variant="outline" className="text-xs">
-											Balance: {(Number(tokenBalance) / (10 ** decimals)).toLocaleString()}
+											Balance:{" "}
+											{(Number(tokenBalance) / 10 ** decimals).toLocaleString()}
 										</Badge>
 									)}
 								</div>
@@ -291,8 +304,9 @@ function BurnForm() {
 							<span className="font-medium text-sm">Warning</span>
 						</div>
 						<p className="text-sm text-red-700 dark:text-red-300">
-							Burning tokens permanently destroys them. This action cannot be undone.
-							Make sure you want to permanently remove these tokens from circulation.
+							Burning tokens permanently destroys them. This action cannot be
+							undone. Make sure you want to permanently remove these tokens from
+							circulation.
 						</p>
 					</div>
 
@@ -381,7 +395,10 @@ function BurnAllForm() {
 
 	useEffect(() => {
 		const sub = form.watch(async (vals, { name }) => {
-			if ((name === "mintAddress" || name === "ownerAddress") && vals.mintAddress) {
+			if (
+				(name === "mintAddress" || name === "ownerAddress") &&
+				vals.mintAddress
+			) {
 				try {
 					const mintPubkey = new PublicKey(vals.mintAddress);
 					const info = await getMint(connection, mintPubkey);
@@ -399,7 +416,10 @@ function BurnAllForm() {
 						});
 
 						try {
-							const tokenAccount = await getAccount(connection, new PublicKey(associatedTokenAddress[0]));
+							const tokenAccount = await getAccount(
+								connection,
+								new PublicKey(associatedTokenAddress[0]),
+							);
 							setTokenBalance(tokenAccount.amount);
 						} catch {
 							setTokenBalance(BigInt(0));
@@ -418,7 +438,7 @@ function BurnAllForm() {
 		if (confirmText !== "BURN ALL") {
 			form.setError("mintAddress", {
 				type: "manual",
-				message: "Please type 'BURN ALL' to confirm"
+				message: "Please type 'BURN ALL' to confirm",
 			});
 			return;
 		}
@@ -467,7 +487,8 @@ function BurnAllForm() {
 									)}
 									{tokenBalance !== null && (
 										<Badge variant="outline" className="text-xs">
-											Balance: {(Number(tokenBalance) / (10 ** decimals)).toLocaleString()}
+											Balance:{" "}
+											{(Number(tokenBalance) / 10 ** decimals).toLocaleString()}
 										</Badge>
 									)}
 								</div>
@@ -501,14 +522,17 @@ function BurnAllForm() {
 									<span className="font-medium">Critical Warning</span>
 								</div>
 								<p className="text-sm text-red-700 dark:text-red-300 mb-3">
-									You are about to burn ALL tokens in this account. This will permanently destroy{" "}
+									You are about to burn ALL tokens in this account. This will
+									permanently destroy{" "}
 									<span className="font-bold">
-										{(Number(tokenBalance) / (10 ** decimals)).toLocaleString()} tokens
-									</span>.
-									This action cannot be undone.
+										{(Number(tokenBalance) / 10 ** decimals).toLocaleString()}{" "}
+										tokens
+									</span>
+									. This action cannot be undone.
 								</p>
 								<p className="text-sm text-red-700 dark:text-red-300">
-									Type <span className="font-bold">"BURN ALL"</span> below to confirm:
+									Type <span className="font-bold">"BURN ALL"</span> below to
+									confirm:
 								</p>
 							</div>
 
@@ -526,7 +550,9 @@ function BurnAllForm() {
 					<Button
 						type="submit"
 						className="w-full bg-red-600 hover:bg-red-700"
-						disabled={form.formState.isSubmitting || !hasBalance || !isConfirmed}
+						disabled={
+							form.formState.isSubmitting || !hasBalance || !isConfirmed
+						}
 						size="lg"
 					>
 						{form.formState.isSubmitting ? (
@@ -538,7 +564,8 @@ function BurnAllForm() {
 							<>
 								<Flame className="h-4 w-4 mr-2" />
 								Burn All Tokens
-								{hasBalance && ` (${(Number(tokenBalance) / (10 ** decimals)).toLocaleString()})`}
+								{hasBalance &&
+									` (${(Number(tokenBalance) / 10 ** decimals).toLocaleString()})`}
 							</>
 						)}
 					</Button>

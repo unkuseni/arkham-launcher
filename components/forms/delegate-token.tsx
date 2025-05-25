@@ -90,7 +90,9 @@ const revokeSchema = z.object({
 
 const transferSchema = z.object({
 	mintAddress: z.string().nonempty("Mint address is required"),
-	destinationOwnerAddress: z.string().nonempty("Destination address is required"),
+	destinationOwnerAddress: z
+		.string()
+		.nonempty("Destination address is required"),
 	currentOwnerAddress: z.string().optional(),
 	tokenStandard: z.enum(["Fungible", "NonFungible"]),
 });
@@ -129,12 +131,14 @@ const DelegateTokens = () => {
 					</h1>
 				</div>
 				<p className="text-muted-foreground text-lg">
-					Delegate spending authority, transfer, burn, and manage token permissions
+					Delegate spending authority, transfer, burn, and manage token
+					permissions
 				</p>
 				<div className="flex items-center justify-center gap-2 text-amber-600">
 					<Key className="h-4 w-4" />
 					<p className="text-sm font-medium">
-						Delegation gives others authority over your tokens - use with caution
+						Delegation gives others authority over your tokens - use with
+						caution
 					</p>
 				</div>
 			</article>
@@ -209,7 +213,8 @@ const DelegateTokens = () => {
 								Delegated Transfer
 							</CardTitle>
 							<CardDescription>
-								Transfer tokens using delegate authority (auto-revokes delegation)
+								Transfer tokens using delegate authority (auto-revokes
+								delegation)
 							</CardDescription>
 						</CardHeader>
 						<CardContent>
@@ -298,7 +303,10 @@ function DelegateForm() {
 
 	useEffect(() => {
 		const sub = form.watch(async (vals, { name }) => {
-			if ((name === "mintAddress" || name === "ownerAddress") && vals.mintAddress) {
+			if (
+				(name === "mintAddress" || name === "ownerAddress") &&
+				vals.mintAddress
+			) {
 				try {
 					const mintPubkey = new PublicKey(vals.mintAddress);
 					const info = await getMint(connection, mintPubkey);
@@ -316,7 +324,10 @@ function DelegateForm() {
 						});
 
 						try {
-							const tokenAccount = await getAccount(connection, new PublicKey(associatedTokenAddress[0]));
+							const tokenAccount = await getAccount(
+								connection,
+								new PublicKey(associatedTokenAddress[0]),
+							);
 							setTokenBalance(tokenAccount.amount);
 						} catch {
 							setTokenBalance(BigInt(0));
@@ -339,7 +350,10 @@ function DelegateForm() {
 				amount: values.amount,
 				ownerAddress: values.ownerAddress || undefined,
 				delegateType: values.delegateType,
-				tokenStandard: values.tokenStandard === "Fungible" ? TokenStandard.Fungible : TokenStandard.NonFungible,
+				tokenStandard:
+					values.tokenStandard === "Fungible"
+						? TokenStandard.Fungible
+						: TokenStandard.NonFungible,
 			});
 			setResult(tx);
 			setOpen(true);
@@ -352,7 +366,7 @@ function DelegateForm() {
 
 	const setMaxAmount = () => {
 		if (tokenBalance !== null && decimals > 0) {
-			const maxAmount = Number(tokenBalance) / (10 ** decimals);
+			const maxAmount = Number(tokenBalance) / 10 ** decimals;
 			form.setValue("amount", maxAmount);
 		}
 	};
@@ -383,7 +397,8 @@ function DelegateForm() {
 									)}
 									{tokenBalance !== null && (
 										<Badge variant="outline" className="text-xs">
-											Balance: {(Number(tokenBalance) / (10 ** decimals)).toLocaleString()}
+											Balance:{" "}
+											{(Number(tokenBalance) / 10 ** decimals).toLocaleString()}
 										</Badge>
 									)}
 								</div>
@@ -428,7 +443,11 @@ function DelegateForm() {
 												onClick={setMaxAmount}
 												className="h-auto p-1 text-xs text-muted-foreground hover:text-foreground"
 											>
-												Max: {(Number(tokenBalance) / (10 ** decimals)).toLocaleString()}
+												Max:{" "}
+												{(
+													Number(tokenBalance) /
+													10 ** decimals
+												).toLocaleString()}
 											</Button>
 										)}
 									</FormLabel>
@@ -452,20 +471,23 @@ function DelegateForm() {
 							render={({ field }) => (
 								<FormItem>
 									<FormLabel>Delegate Type</FormLabel>
-									<Select onValueChange={field.onChange} defaultValue={field.value}>
+									<Select
+										onValueChange={field.onChange}
+										defaultValue={field.value}
+									>
 										<FormControl>
 											<SelectTrigger>
 												<SelectValue placeholder="Select type" />
 											</SelectTrigger>
 										</FormControl>
 										<SelectContent>
-											<SelectItem value="default">Token Metadata Standard</SelectItem>
+											<SelectItem value="default">
+												Token Metadata Standard
+											</SelectItem>
 											<SelectItem value="spl">SPL Token Standard</SelectItem>
 										</SelectContent>
 									</Select>
-									<FormDescription>
-										Choose delegation standard
-									</FormDescription>
+									<FormDescription>Choose delegation standard</FormDescription>
 									<FormMessage />
 								</FormItem>
 							)}
@@ -478,7 +500,8 @@ function DelegateForm() {
 							name="tokenStandard"
 							render={({ field }) => (
 								<FormItem>
-									<FormLabel>Token Standard</FormLabel>					<Select
+									<FormLabel>Token Standard</FormLabel>{" "}
+									<Select
 										onValueChange={field.onChange}
 										defaultValue={field.value}
 									>
@@ -489,7 +512,9 @@ function DelegateForm() {
 										</FormControl>
 										<SelectContent>
 											<SelectItem value="Fungible">Fungible Token</SelectItem>
-											<SelectItem value="NonFungible">Non-Fungible Token</SelectItem>
+											<SelectItem value="NonFungible">
+												Non-Fungible Token
+											</SelectItem>
 										</SelectContent>
 									</Select>
 									<FormMessage />
@@ -522,8 +547,9 @@ function DelegateForm() {
 							<span className="font-medium text-sm">Important</span>
 						</div>
 						<p className="text-sm text-amber-700 dark:text-amber-300">
-							Delegating tokens gives another wallet spending authority over your tokens.
-							The delegate can transfer, burn, or otherwise use your tokens. Only delegate to trusted parties.
+							Delegating tokens gives another wallet spending authority over
+							your tokens. The delegate can transfer, burn, or otherwise use
+							your tokens. Only delegate to trusted parties.
 						</p>
 					</div>
 
@@ -565,14 +591,20 @@ function DelegateForm() {
 								<div className="flex justify-between items-center">
 									<span className="text-sm font-medium">Transaction:</span>
 									<Badge variant="outline" className="font-mono text-xs">
-										{result.signature.slice(0, 8)}...{result.signature.slice(-8)}
+										{result.signature.slice(0, 8)}...
+										{result.signature.slice(-8)}
 									</Badge>
 								</div>
 								{result.amountDelegated && (
 									<div className="flex justify-between items-center">
-										<span className="text-sm font-medium">Amount Delegated:</span>
+										<span className="text-sm font-medium">
+											Amount Delegated:
+										</span>
 										<span className="text-sm font-mono">
-											{(Number(result.amountDelegated) / (10 ** decimals)).toLocaleString()}
+											{(
+												Number(result.amountDelegated) /
+												10 ** decimals
+											).toLocaleString()}
 										</span>
 									</div>
 								)}
@@ -683,14 +715,19 @@ function RevokeForm() {
 							render={({ field }) => (
 								<FormItem>
 									<FormLabel>Delegate Type</FormLabel>
-									<Select onValueChange={field.onChange} defaultValue={field.value}>
+									<Select
+										onValueChange={field.onChange}
+										defaultValue={field.value}
+									>
 										<FormControl>
 											<SelectTrigger>
 												<SelectValue placeholder="Select type" />
 											</SelectTrigger>
 										</FormControl>
 										<SelectContent>
-											<SelectItem value="default">Token Metadata Standard</SelectItem>
+											<SelectItem value="default">
+												Token Metadata Standard
+											</SelectItem>
 											<SelectItem value="spl">SPL Token Standard</SelectItem>
 										</SelectContent>
 									</Select>
@@ -756,7 +793,8 @@ function RevokeForm() {
 								<div className="flex justify-between items-center">
 									<span className="text-sm font-medium">Transaction:</span>
 									<Badge variant="outline" className="font-mono text-xs">
-										{result.signature.slice(0, 8)}...{result.signature.slice(-8)}
+										{result.signature.slice(0, 8)}...
+										{result.signature.slice(-8)}
 									</Badge>
 								</div>
 								<div className="text-xs text-muted-foreground">
@@ -805,7 +843,10 @@ function TransferForm() {
 				mintAddress: values.mintAddress,
 				destinationOwnerAddress: values.destinationOwnerAddress,
 				currentOwnerAddress: values.currentOwnerAddress || undefined,
-				tokenStandard: values.tokenStandard === "Fungible" ? TokenStandard.Fungible : TokenStandard.NonFungible,
+				tokenStandard:
+					values.tokenStandard === "Fungible"
+						? TokenStandard.Fungible
+						: TokenStandard.NonFungible,
 			});
 			setResult(tx);
 			setOpen(true);
@@ -866,7 +907,10 @@ function TransferForm() {
 							render={({ field }) => (
 								<FormItem>
 									<FormLabel>Token Standard</FormLabel>
-									<Select onValueChange={field.onChange} defaultValue={field.value}>
+									<Select
+										onValueChange={field.onChange}
+										defaultValue={field.value}
+									>
 										<FormControl>
 											<SelectTrigger>
 												<SelectValue placeholder="Select standard" />
@@ -874,7 +918,9 @@ function TransferForm() {
 										</FormControl>
 										<SelectContent>
 											<SelectItem value="Fungible">Fungible Token</SelectItem>
-											<SelectItem value="NonFungible">Non-Fungible Token</SelectItem>
+											<SelectItem value="NonFungible">
+												Non-Fungible Token
+											</SelectItem>
 										</SelectContent>
 									</Select>
 									<FormMessage />
@@ -907,7 +953,8 @@ function TransferForm() {
 							<span className="font-medium text-sm">Note</span>
 						</div>
 						<p className="text-sm text-blue-700 dark:text-blue-300">
-							This transfer uses delegate authority and will automatically revoke the delegation after the transfer.
+							This transfer uses delegate authority and will automatically
+							revoke the delegation after the transfer.
 						</p>
 					</div>
 
@@ -940,7 +987,8 @@ function TransferForm() {
 							Transfer Successful
 						</DialogTitle>
 						<DialogDescription>
-							Tokens have been successfully transferred using delegate authority.
+							Tokens have been successfully transferred using delegate
+							authority.
 						</DialogDescription>
 					</DialogHeader>
 					<div className="space-y-3 py-4">
@@ -949,7 +997,8 @@ function TransferForm() {
 								<div className="flex justify-between items-center">
 									<span className="text-sm font-medium">Transaction:</span>
 									<Badge variant="outline" className="font-mono text-xs">
-										{result.signature.slice(0, 8)}...{result.signature.slice(-8)}
+										{result.signature.slice(0, 8)}...
+										{result.signature.slice(-8)}
 									</Badge>
 								</div>
 								<div className="text-xs text-muted-foreground">
@@ -996,7 +1045,10 @@ function BurnForm() {
 			const tx = await delegatedBurn({
 				mintAddress: values.mintAddress,
 				tokenOwnerAddress: values.tokenOwnerAddress || undefined,
-				tokenStandard: values.tokenStandard === "Fungible" ? TokenStandard.Fungible : TokenStandard.NonFungible,
+				tokenStandard:
+					values.tokenStandard === "Fungible"
+						? TokenStandard.Fungible
+						: TokenStandard.NonFungible,
 			});
 			setResult(tx);
 			setOpen(true);
@@ -1036,7 +1088,10 @@ function BurnForm() {
 							render={({ field }) => (
 								<FormItem>
 									<FormLabel>Token Standard</FormLabel>
-									<Select onValueChange={field.onChange} defaultValue={field.value}>
+									<Select
+										onValueChange={field.onChange}
+										defaultValue={field.value}
+									>
 										<FormControl>
 											<SelectTrigger>
 												<SelectValue placeholder="Select standard" />
@@ -1044,7 +1099,9 @@ function BurnForm() {
 										</FormControl>
 										<SelectContent>
 											<SelectItem value="Fungible">Fungible Token</SelectItem>
-											<SelectItem value="NonFungible">Non-Fungible Token</SelectItem>
+											<SelectItem value="NonFungible">
+												Non-Fungible Token
+											</SelectItem>
 										</SelectContent>
 									</Select>
 									<FormMessage />
@@ -1077,7 +1134,8 @@ function BurnForm() {
 							<span className="font-medium text-sm">Warning</span>
 						</div>
 						<p className="text-sm text-red-700 dark:text-red-300">
-							This action will permanently destroy the tokens using delegate authority. This cannot be undone.
+							This action will permanently destroy the tokens using delegate
+							authority. This cannot be undone.
 						</p>
 					</div>
 
@@ -1120,7 +1178,8 @@ function BurnForm() {
 								<div className="flex justify-between items-center">
 									<span className="text-sm font-medium">Transaction:</span>
 									<Badge variant="outline" className="font-mono text-xs">
-										{result.signature.slice(0, 8)}...{result.signature.slice(-8)}
+										{result.signature.slice(0, 8)}...
+										{result.signature.slice(-8)}
 									</Badge>
 								</div>
 								<div className="text-xs text-muted-foreground">
@@ -1167,7 +1226,10 @@ function LockForm() {
 			const tx = await lockAsset({
 				mintAddress: values.mintAddress,
 				tokenOwnerAddress: values.tokenOwnerAddress || undefined,
-				tokenStandard: values.tokenStandard === "Fungible" ? TokenStandard.Fungible : TokenStandard.NonFungible,
+				tokenStandard:
+					values.tokenStandard === "Fungible"
+						? TokenStandard.Fungible
+						: TokenStandard.NonFungible,
 			});
 			setResult(tx);
 			setOpen(true);
@@ -1207,7 +1269,10 @@ function LockForm() {
 							render={({ field }) => (
 								<FormItem>
 									<FormLabel>Token Standard</FormLabel>
-									<Select onValueChange={field.onChange} defaultValue={field.value}>
+									<Select
+										onValueChange={field.onChange}
+										defaultValue={field.value}
+									>
 										<FormControl>
 											<SelectTrigger>
 												<SelectValue placeholder="Select standard" />
@@ -1215,7 +1280,9 @@ function LockForm() {
 										</FormControl>
 										<SelectContent>
 											<SelectItem value="Fungible">Fungible Token</SelectItem>
-											<SelectItem value="NonFungible">Non-Fungible Token</SelectItem>
+											<SelectItem value="NonFungible">
+												Non-Fungible Token
+											</SelectItem>
 										</SelectContent>
 									</Select>
 									<FormDescription>
@@ -1251,7 +1318,8 @@ function LockForm() {
 							<span className="font-medium text-sm">Important</span>
 						</div>
 						<p className="text-sm text-orange-700 dark:text-orange-300">
-							Locking an asset prevents transfers until it's unlocked. You must have delegate authority to lock assets.
+							Locking an asset prevents transfers until it's unlocked. You must
+							have delegate authority to lock assets.
 						</p>
 					</div>
 
@@ -1293,7 +1361,8 @@ function LockForm() {
 								<div className="flex justify-between items-center">
 									<span className="text-sm font-medium">Transaction:</span>
 									<Badge variant="outline" className="font-mono text-xs">
-										{result.signature.slice(0, 8)}...{result.signature.slice(-8)}
+										{result.signature.slice(0, 8)}...
+										{result.signature.slice(-8)}
 									</Badge>
 								</div>
 								<div className="text-xs text-muted-foreground">
@@ -1340,7 +1409,10 @@ function UnlockForm() {
 			const tx = await unlockAsset({
 				mintAddress: values.mintAddress,
 				tokenOwnerAddress: values.tokenOwnerAddress || undefined,
-				tokenStandard: values.tokenStandard === "Fungible" ? TokenStandard.Fungible : TokenStandard.NonFungible,
+				tokenStandard:
+					values.tokenStandard === "Fungible"
+						? TokenStandard.Fungible
+						: TokenStandard.NonFungible,
 			});
 			setResult(tx);
 			setOpen(true);
@@ -1380,7 +1452,10 @@ function UnlockForm() {
 							render={({ field }) => (
 								<FormItem>
 									<FormLabel>Token Standard</FormLabel>
-									<Select onValueChange={field.onChange} defaultValue={field.value}>
+									<Select
+										onValueChange={field.onChange}
+										defaultValue={field.value}
+									>
 										<FormControl>
 											<SelectTrigger>
 												<SelectValue placeholder="Select standard" />
@@ -1388,7 +1463,9 @@ function UnlockForm() {
 										</FormControl>
 										<SelectContent>
 											<SelectItem value="Fungible">Fungible Token</SelectItem>
-											<SelectItem value="NonFungible">Non-Fungible Token</SelectItem>
+											<SelectItem value="NonFungible">
+												Non-Fungible Token
+											</SelectItem>
 										</SelectContent>
 									</Select>
 									<FormMessage />
@@ -1421,7 +1498,8 @@ function UnlockForm() {
 							<span className="font-medium text-sm">Note</span>
 						</div>
 						<p className="text-sm text-green-700 dark:text-green-300">
-							Unlocking will restore transfer capabilities to the asset. You must have delegate authority to unlock assets.
+							Unlocking will restore transfer capabilities to the asset. You
+							must have delegate authority to unlock assets.
 						</p>
 					</div>
 
@@ -1463,7 +1541,8 @@ function UnlockForm() {
 								<div className="flex justify-between items-center">
 									<span className="text-sm font-medium">Transaction:</span>
 									<Badge variant="outline" className="font-mono text-xs">
-										{result.signature.slice(0, 8)}...{result.signature.slice(-8)}
+										{result.signature.slice(0, 8)}...
+										{result.signature.slice(-8)}
 									</Badge>
 								</div>
 								<div className="text-xs text-muted-foreground">

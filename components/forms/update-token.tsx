@@ -2,7 +2,15 @@
 import { uploadImageToCloudflareR2 } from "@/lib/s3-bucket";
 import { updateTokenMetadata } from "@/lib/token/update-token";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AlertCircle, CheckCircle2, Edit3, Image as ImageIcon, Loader2, Upload, X } from "lucide-react";
+import {
+	AlertCircle,
+	CheckCircle2,
+	Edit3,
+	Image as ImageIcon,
+	Loader2,
+	Upload,
+	X,
+} from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -15,7 +23,13 @@ import {
 	CardTitle,
 } from "../ui/card";
 import { Checkbox } from "../ui/checkbox";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "../ui/dialog";
+import {
+	Dialog,
+	DialogContent,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "../ui/dialog";
 import {
 	Form,
 	FormControl,
@@ -163,7 +177,7 @@ const UpdateToken = () => {
 		e.preventDefault();
 		setIsDragging(false);
 		const file = e.dataTransfer.files[0];
-		if (file?.type.startsWith('image/')) {
+		if (file?.type.startsWith("image/")) {
 			handleImageChange(file);
 		}
 	};
@@ -190,7 +204,9 @@ const UpdateToken = () => {
 			<article className="mx-auto text-center space-y-2">
 				<div className="flex items-center justify-center gap-2 mb-4">
 					<Edit3 className="h-8 w-8 text-primary" />
-					<h1 className="text-4xl font-bold font-inter">Update Token Metadata</h1>
+					<h1 className="text-4xl font-bold font-inter">
+						Update Token Metadata
+					</h1>
 				</div>
 				<p className="text-muted-foreground text-lg">
 					Update on-chain & off-chain metadata for your Solana token
@@ -245,7 +261,9 @@ const UpdateToken = () => {
 										name="name"
 										render={({ field }) => (
 											<FormItem>
-												<FormLabel className="text-base font-medium">Token Name</FormLabel>
+												<FormLabel className="text-base font-medium">
+													Token Name
+												</FormLabel>
 												<FormControl>
 													<Input
 														placeholder="e.g., My Awesome Token"
@@ -263,7 +281,9 @@ const UpdateToken = () => {
 										name="symbol"
 										render={({ field }) => (
 											<FormItem>
-												<FormLabel className="text-base font-medium">Symbol</FormLabel>
+												<FormLabel className="text-base font-medium">
+													Symbol
+												</FormLabel>
 												<FormControl>
 													<Input
 														placeholder="e.g., MAT"
@@ -282,7 +302,9 @@ const UpdateToken = () => {
 									name="description"
 									render={({ field }) => (
 										<FormItem>
-											<FormLabel className="text-base font-medium">Description</FormLabel>
+											<FormLabel className="text-base font-medium">
+												Description
+											</FormLabel>
 											<FormControl>
 												<Textarea
 													placeholder="Describe your token's purpose, utility, and key features..."
@@ -291,7 +313,8 @@ const UpdateToken = () => {
 												/>
 											</FormControl>
 											<FormDescription>
-												A comprehensive description that will be stored in metadata
+												A comprehensive description that will be stored in
+												metadata
 											</FormDescription>
 											<FormMessage />
 										</FormItem>
@@ -303,7 +326,9 @@ const UpdateToken = () => {
 									name="uri"
 									render={({ field }) => (
 										<FormItem>
-											<FormLabel className="text-base font-medium">Metadata URI</FormLabel>
+											<FormLabel className="text-base font-medium">
+												Metadata URI
+											</FormLabel>
 											<FormControl>
 												<Input
 													placeholder="https://your-metadata-url.com/metadata.json"
@@ -334,7 +359,9 @@ const UpdateToken = () => {
 									name="image"
 									render={({ field }) => (
 										<FormItem>
-											<FormLabel className="text-base font-medium">Upload Image</FormLabel>
+											<FormLabel className="text-base font-medium">
+												Upload Image
+											</FormLabel>
 											<FormControl>
 												<div className="space-y-4">
 													{/* Image Preview */}
@@ -359,10 +386,11 @@ const UpdateToken = () => {
 
 													{/* Upload Area */}
 													<div
-														className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors ${isDragging
-																? 'border-primary bg-primary/5'
-																: 'border-muted-foreground/25 hover:border-muted-foreground/50'
-															} ${imagePreview ? 'mt-4' : ''}`}
+														className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+															isDragging
+																? "border-primary bg-primary/5"
+																: "border-muted-foreground/25 hover:border-muted-foreground/50"
+														} ${imagePreview ? "mt-4" : ""}`}
 														onDrop={handleDrop}
 														onDragOver={handleDragOver}
 														onDragLeave={handleDragLeave}
@@ -370,7 +398,9 @@ const UpdateToken = () => {
 														{isImageUploading ? (
 															<div className="flex flex-col items-center space-y-2">
 																<Loader2 className="h-8 w-8 animate-spin text-primary" />
-																<p className="text-sm text-muted-foreground">Uploading image...</p>
+																<p className="text-sm text-muted-foreground">
+																	Uploading image...
+																</p>
 															</div>
 														) : (
 															<div className="flex flex-col items-center space-y-4">
@@ -379,16 +409,23 @@ const UpdateToken = () => {
 																</div>
 																<div className="space-y-2">
 																	<h4 className="text-lg font-medium">
-																		{imagePreview ? 'Replace Image' : 'Upload Token Image'}
+																		{imagePreview
+																			? "Replace Image"
+																			: "Upload Token Image"}
 																	</h4>
 																	<p className="text-sm text-muted-foreground">
 																		Drag & drop or click to browse
 																	</p>
 																	<p className="text-xs text-muted-foreground">
-																		Recommended: 1000x1000px • Max 5MB • JPG, PNG, WEBP, GIF
+																		Recommended: 1000x1000px • Max 5MB • JPG,
+																		PNG, WEBP, GIF
 																	</p>
 																</div>
-																<Button type="button" variant="outline" className="mt-4">
+																<Button
+																	type="button"
+																	variant="outline"
+																	className="mt-4"
+																>
 																	Select Image
 																</Button>
 															</div>
@@ -425,14 +462,22 @@ const UpdateToken = () => {
 										name="sellerFeeBasisPoints"
 										render={({ field }) => (
 											<FormItem>
-												<FormLabel className="text-base font-medium">Royalty Fee (Basis Points)</FormLabel>
+												<FormLabel className="text-base font-medium">
+													Royalty Fee (Basis Points)
+												</FormLabel>
 												<FormControl>
 													<Input
 														type="number"
 														placeholder="e.g., 500 for 5%"
 														className="h-12"
 														{...field}
-														onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
+														onChange={(e) =>
+															field.onChange(
+																e.target.value
+																	? Number(e.target.value)
+																	: undefined,
+															)
+														}
 													/>
 												</FormControl>
 												<FormDescription>
@@ -498,7 +543,9 @@ const UpdateToken = () => {
 										name="mintAuthority"
 										render={({ field }) => (
 											<FormItem>
-												<FormLabel className="text-base font-medium">New Mint Authority</FormLabel>
+												<FormLabel className="text-base font-medium">
+													New Mint Authority
+												</FormLabel>
 												<FormControl>
 													<Input
 														placeholder="Enter public key or leave empty"
@@ -519,7 +566,9 @@ const UpdateToken = () => {
 										name="updateAuthority"
 										render={({ field }) => (
 											<FormItem>
-												<FormLabel className="text-base font-medium">New Update Authority</FormLabel>
+												<FormLabel className="text-base font-medium">
+													New Update Authority
+												</FormLabel>
 												<FormControl>
 													<Input
 														placeholder="Enter public key or leave empty"
@@ -599,10 +648,13 @@ const UpdateToken = () => {
 						</DialogHeader>
 						<div className="space-y-4">
 							<p className="text-sm text-muted-foreground">
-								Your token metadata has been successfully updated on the Solana blockchain.
+								Your token metadata has been successfully updated on the Solana
+								blockchain.
 							</p>
 							<div className="p-4 bg-muted rounded-lg">
-								<p className="text-sm font-medium mb-2">Transaction Signature:</p>
+								<p className="text-sm font-medium mb-2">
+									Transaction Signature:
+								</p>
 								<code className="text-xs break-all bg-background p-2 rounded border">
 									{signature}
 								</code>
@@ -622,7 +674,10 @@ const UpdateToken = () => {
 									variant="outline"
 									size="sm"
 									onClick={() => {
-										window.open(`https://explorer.solana.com/tx/${signature}`, '_blank');
+										window.open(
+											`https://explorer.solana.com/tx/${signature}`,
+											"_blank",
+										);
 									}}
 									className="flex-1"
 								>
