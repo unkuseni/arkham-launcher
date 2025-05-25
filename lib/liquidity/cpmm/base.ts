@@ -1,4 +1,4 @@
-import type { Network } from "@/store/useUmiStore";
+import { Network } from "@/store/useUmiStore";
 import {
 	type Signer,
 	type Umi,
