@@ -3,6 +3,7 @@ import {
 	fetchMetadataFromSeeds,
 	updateV1,
 } from "@metaplex-foundation/mpl-token-metadata";
+import { setComputeUnitPrice } from "@metaplex-foundation/mpl-toolbox";
 import { publicKey } from "@metaplex-foundation/umi";
 import { base58 } from "@metaplex-foundation/umi/serializers";
 
@@ -69,7 +70,7 @@ export const updateTokenMetadata = async (
 		newUpdateAuthority: updateAuthority
 			? publicKey(updateAuthority)
 			: undefined,
-	});
+	}).add(setComputeUnitPrice(umi, { microLamports: 2_500_000 }));
 
 	// Send and confirm
 	const tx = await txBuilder.sendAndConfirm(umi);

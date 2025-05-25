@@ -19,25 +19,43 @@ export async function GET(req: NextRequest) {
 		);
 	}
 
+	if (userPublicKey.trim().length === 0) {
+		return NextResponse.json(
+			{ error: "userPublicKey cannot be empty." },
+			{ status: 400 },
+		);
+	}
+
 	try {
 		const { data, error } = await supabase
-			.from("r2_uploads")
+			.from("keypairs")
 			.select("*")
-			.eq("creator_wallet_address", userPublicKey);
+			.eq("creator_wallet_address", userPublicKey)
+			.order("created_at", { ascending: false });
 
 		if (error) {
-			console.error("Error fetching data from Supabase:", error);
+			console.error("Error fetching keypairs from Supabase:", error);
 			return NextResponse.json(
-				{ error: "Failed to fetch data from Supabase." },
+				{
+					error: "Failed to fetch keypairs from Supabase.",
+					details: error.message,
+				},
 				{ status: 500 },
 			);
 		}
 
-		return NextResponse.json({ uploads: data });
+		return NextResponse.json({
+			keypairs: data || [],
+			count: data?.length || 0,
+			userPublicKey,
+		});
 	} catch (err) {
-		console.error("Error in getUploads API:", err);
+		console.error("Error in getKeypairs API:", err);
 		return NextResponse.json(
-			{ error: "An unexpected error occurred." },
+			{
+				error: "An unexpected error occurred.",
+				details: err instanceof Error ? err.message : "Unknown error",
+			},
 			{ status: 500 },
 		);
 	}
