@@ -1,5 +1,6 @@
 "use client";
-import { Coins, House } from "lucide-react";
+import { Coins, Droplets, House } from "lucide-react";
+import { title } from "process";
 import {
 	Sidebar,
 	SidebarContent,
@@ -54,6 +55,34 @@ const data = [
 			},
 		],
 	},
+	{
+		label: "Pools",
+		title: "Liquidity Management",
+		url: "create-pool",
+		icon: Droplets,
+		items: [
+			{
+				title: "Create a Pool",
+				url: "create-pool",
+			},
+			{
+				title: "Add Liquidity",
+				url: "add-liquidity",
+			},
+			{
+				title: "Remove Liquidity",
+				url: "remove-liquidity",
+			},
+			{
+				title: "Swap Tokens",
+				url: "swap-tokens",
+			},
+			{
+				title: "View Pool Info",
+				url: "view-pool-info",
+			},
+		]
+	}
 ];
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
