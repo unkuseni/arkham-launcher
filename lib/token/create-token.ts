@@ -110,71 +110,94 @@ export const createSPLTokens = async (mintinfo: {
 	supply: number;
 	metadataUri: string;
 }) => {
+	if (!mintinfo.name?.trim()) {
+		throw new Error("Token name is required");
+	}
+	if (mintinfo.decimals < 0 || mintinfo.decimals > 12) {
+		throw new Error("Decimals must be between 0 and 12");
+	}
+	if (mintinfo.supply <= 0) {
+		throw new Error("Supply must be greater than 0");
+	}
+	if (!mintinfo.metadataUri?.trim()) {
+		throw new Error("Metadata URI is required");
+	}
+
 	const { umi, signer } = useUmiStore.getState();
 	if (!signer) {
 		throw new Error("No wallet connected. Please connect your wallet first.");
 	}
-	const mintSigner = generateSigner(umi);
-	const { name, decimals, supply, metadataUri } = mintinfo;
+	try {
+		const mintSigner = generateSigner(umi);
+		const { name, decimals, supply, metadataUri } = mintinfo;
 
-	const mintAddress = mintSigner.publicKey;
-	const createFungibleIx = createV1(umi, {
-		mint: mintSigner,
-		authority: signer,
-		updateAuthority: signer,
-		isMutable: true,
-		name,
-		decimals,
-		uri: metadataUri,
-		printSupply: {
-			__kind: "Limited",
-			fields: [supply],
-		},
-		sellerFeeBasisPoints: percentAmount(0),
-		tokenStandard: TokenStandard.Fungible,
-		splTokenProgram: SPL_TOKEN_PROGRAM_ID,
-	});
+		const mintAddress = mintSigner.publicKey;
 
-	const createTokenIx = createTokenIfMissing(umi, {
-		mint: mintAddress,
-		owner: umi.identity.publicKey,
-		ataProgram: getSplAssociatedTokenProgramId(umi),
-	});
+		const createFungibleIx = createV1(umi, {
+			mint: mintSigner,
+			authority: signer,
+			updateAuthority: signer,
+			isMutable: true,
+			name,
+			decimals,
+			uri: metadataUri,
+			printSupply: {
+				__kind: "Limited",
+				fields: [supply],
+			},
+			sellerFeeBasisPoints: percentAmount(0),
+			tokenStandard: TokenStandard.Fungible,
+			splTokenProgram: SPL_TOKEN_PROGRAM_ID,
+		});
 
-	// Get the Associated Token Account (ATA) address
-	const associatedTokenAccount = findAssociatedTokenPda(umi, {
-		mint: mintAddress,
-		owner: umi.identity.publicKey,
-	});
+		const createTokenIx = createTokenIfMissing(umi, {
+			mint: mintAddress,
+			owner: umi.identity.publicKey,
+			ataProgram: getSplAssociatedTokenProgramId(umi),
+		});
 
-	const mintTokensIx = mintTokensTo(umi, {
-		mint: mintSigner.publicKey,
-		token: associatedTokenAccount,
-		amount: BigInt(supply * 10 ** decimals),
-	});
+		// Get the Associated Token Account (ATA) address
+		const associatedTokenAccount = findAssociatedTokenPda(umi, {
+			mint: mintAddress,
+			owner: umi.identity.publicKey,
+		});
 
-	const tx = await createFungibleIx
-		.add(createTokenIx)
-		.add(mintTokensIx)
-		.add(setComputeUnitPrice(umi, { microLamports: 2_500_000 }))
-		.sendAndConfirm(umi);
+		const mintTokensIx = mintTokensTo(umi, {
+			mint: mintSigner.publicKey,
+			token: associatedTokenAccount,
+			amount: BigInt(supply * 10 ** decimals),
+		});
 
-	const signature = base58.deserialize(tx.signature)[0];
-	console.log("\nTransaction Complete");
-	console.log("View Transaction on Solana Explorer");
-	console.log(`https://explorer.solana.com/tx/${signature}?cluster=devnet`);
-	console.log("View Token on Solana Explorer");
-	console.log(
-		`https://explorer.solana.com/address/${mintAddress}?cluster=devnet`, // Use mintAddress
-	);
-	console.log("View Token Account on Solana Explorer");
-	console.log(
-		`https://explorer.solana.com/address/${associatedTokenAccount}?cluster=devnet`, // Log the ATA
-	);
+		const tx = await createFungibleIx
+			.add(createTokenIx)
+			.add(mintTokensIx)
+			.add(setComputeUnitPrice(umi, { microLamports: 2_500_000 }))
+			.sendAndConfirm(umi);
 
-	return {
-		signature,
-		mintAddress: mintAddress.toString(),
-		tokenAddress: associatedTokenAccount.toString(),
-	};
+		const signature = base58.deserialize(tx.signature)[0];
+		console.log("\nTransaction Complete");
+		console.log("View Transaction on Solana Explorer");
+		console.log(`https://explorer.solana.com/tx/${signature}?cluster=devnet`);
+		console.log("View Token on Solana Explorer");
+		console.log(
+			`https://explorer.solana.com/address/${mintAddress}?cluster=devnet`, // Use mintAddress
+		);
+		console.log("View Token Account on Solana Explorer");
+		console.log(
+			`https://explorer.solana.com/address/${associatedTokenAccount}?cluster=devnet`, // Log the ATA
+		);
+
+		return {
+			signature,
+			mintAddress: mintAddress.toString(),
+			tokenAddress: associatedTokenAccount.toString(),
+		};
+	} catch (error) {
+		console.error("Failed to create SPL token:", error);
+		throw new Error(
+			error instanceof Error
+				? `Token creation failed: ${error.message}`
+				: "Unknown error occurred during token creation",
+		);
+	}
 };
