@@ -1,4 +1,5 @@
 import BurnTokens from "@/components/forms/burn-token";
+import CreatePool from "@/components/forms/create-pool";
 import CreateToken from "@/components/forms/create-token";
 import DelegateTokens from "@/components/forms/delegate-token";
 import FreezeToken from "@/components/forms/freeze-token";
@@ -36,6 +37,9 @@ export default async function Page({
 			break;
 		case "freeze-token":
 			content = <FreezeToken />;
+			break;
+		case "create-pool":
+			content = <CreatePool />;
 			break;
 		default:
 			content = <p>Invalid slug</p>;
