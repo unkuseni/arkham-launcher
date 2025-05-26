@@ -59,6 +59,9 @@ import {
 	TooltipTrigger,
 } from "../ui/tooltip";
 
+const SOL_MINT_ADDRESS = "So11111111111111111111111111111111111111112"; // Wrapped SOL mint
+const NATIVE_SOL_ADDRESS = "11111111111111111111111111111111";
+
 // Icons
 const PlusIcon = () => (
 	<svg
@@ -250,10 +253,41 @@ const EnhancedTransferComponent = () => {
 
 	// Fetch token balances
 	useEffect(() => {
-		if (signer && connectionStatus === ConnectionStatus.CONNECTED) {
-			getTokenBalances().then(setTokens).catch(console.error);
-		}
-	}, [signer, connectionStatus, getTokenBalances]);
+		const loadTokensWithSol = async () => {
+			if (!signer || !umi || connectionStatus !== ConnectionStatus.CONNECTED) {
+				setTokens([]);
+				return;
+			}
+
+			try {
+				// Get SPL token balances
+				const splTokens = await getTokenBalances();
+
+				// Get SOL balance using UMI
+				const solBalanceResult = await umi.rpc.getBalance(signer.publicKey);
+				const solBalance = Number(solBalanceResult.basisPoints);
+
+				// Create SOL token entry
+				const solToken: RawBalance = {
+					mint: SOL_MINT_ADDRESS,
+					amount: BigInt(solBalance),
+					decimals: 9,
+					symbol: "SOL",
+					name: "Solana",
+				};
+
+				// Combine SOL with other tokens
+				const allTokens = [solToken, ...splTokens];
+				setTokens(allTokens);
+			} catch (err) {
+				console.error("Failed to load token balances:", err);
+				setTokens([]);
+			}
+		};
+
+		loadTokensWithSol();
+	}, [signer, connectionStatus, getTokenBalances, umi]);
+
 
 	const addResult = (result: TransferResult<string | string[]>) => {
 		setResults((prev) => [
@@ -1226,13 +1260,42 @@ const TransferTokenForm = () => {
 	});
 
 	// Fetch balances when component mounts or wallet connection changes
+	// Fetch balances including SOL when component mounts or wallet connection changes
 	useEffect(() => {
-		if (signer && connectionStatus === ConnectionStatus.CONNECTED) {
-			getTokenBalances()
-				.then((list) => setTokens(list))
-				.catch((err) => console.error("Failed to load token balances:", err));
-		}
-	}, [getTokenBalances, signer, connectionStatus]);
+		const loadTokensWithSol = async () => {
+			if (!signer || !umi || connectionStatus !== ConnectionStatus.CONNECTED) {
+				setTokens([]);
+				return;
+			}
+
+			try {
+				// Get SPL token balances
+				const splTokens = await getTokenBalances();
+
+				// Get SOL balance using UMI
+				const solBalanceResult = await umi.rpc.getBalance(signer.publicKey);
+				const solBalance = Number(solBalanceResult.basisPoints);
+
+				// Create SOL token entry
+				const solToken: RawBalance = {
+					mint: SOL_MINT_ADDRESS, // Type assertion for compatibility
+					amount: BigInt(solBalance),
+					decimals: 9,
+					symbol: "SOL",
+					name: "Solana",
+				};
+
+				// Combine SOL with other tokens, SOL first
+				const allTokens = [solToken, ...splTokens];
+				setTokens(allTokens);
+			} catch (err) {
+				console.error("Failed to load token balances:", err);
+				setTokens([]);
+			}
+		};
+
+		loadTokensWithSol();
+	}, [getTokenBalances, signer, connectionStatus, umi]);
 
 	const onSubmit = async (values: FormValues) => {
 		if (!signer || !umi) {

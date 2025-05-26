@@ -15,6 +15,7 @@ import { type CreateCPMMPoolParams, createCPMMPool } from "@/lib/liquidity/cpmm/
 import useUmiStore, { ConnectionStatus } from "@/store/useUmiStore";
 import { Network } from "@/store/useUmiStore";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { sol } from "@metaplex-foundation/umi";
 import BN from "bn.js";
 import { AlertCircle, DollarSign, Droplets, Info, RefreshCw, Settings2, TrendingUp, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -22,6 +23,8 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Label } from "../ui/label";
 
+const SOL_MINT_ADDRESS = "So11111111111111111111111111111111111111112"; // Wrapped SOL mint
+const NATIVE_SOL_ADDRESS = "11111111111111111111111111111111";
 // Pool type selection
 type PoolType = "clmm" | "cpmm";
 
@@ -125,6 +128,8 @@ const CreatePool = () => {
       setLoadingTokens(true);
       try {
         const balances = await getTokenBalances();
+        const solBalanceResult = await umi.rpc.getBalance(signer.publicKey);
+        const solBalance = Number(solBalanceResult.basisPoints) / 1e9;
         const formattedTokens = balances.map(token => ({
           mint: token.mint.toString(),
           amount: token.amount,
@@ -133,7 +138,15 @@ const CreatePool = () => {
           name: token.name,
           formattedAmount: (Number(token.amount) / 10 ** token.decimals).toLocaleString()
         }));
-        setAvailableTokens(formattedTokens);
+
+        setAvailableTokens([{
+          mint: SOL_MINT_ADDRESS,
+          amount: BigInt(solBalanceResult.basisPoints),
+          decimals: 9,
+          symbol: "SOL",
+          name: "Solana",
+          formattedAmount: solBalance.toLocaleString(undefined, { maximumFractionDigits: 9 })
+        }, ...formattedTokens]);
       } catch (error) {
         console.error('Failed to load token balances:', error);
         setAvailableTokens([]);
@@ -143,7 +156,7 @@ const CreatePool = () => {
     };
 
     loadTokenBalances();
-  }, [signer, connectionStatus, getTokenBalances]);
+  }, [signer, connectionStatus, getTokenBalances, umi.rpc.getBalance]);
 
   // Function to refresh token balances manually
   const refreshTokenBalances = async () => {
