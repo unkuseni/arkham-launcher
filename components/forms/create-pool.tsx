@@ -12,12 +12,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { type CreateCLMMPoolParams, createCLMMPool } from "@/lib/liquidity/clmm/create";
 import { type CreateCPMMPoolParams, createCPMMPool } from "@/lib/liquidity/cpmm/create";
-import useUmiStore from "@/store/useUmiStore";
+import useUmiStore, { ConnectionStatus } from "@/store/useUmiStore";
 import { Network } from "@/store/useUmiStore";
 import { zodResolver } from "@hookform/resolvers/zod";
 import BN from "bn.js";
-import { AlertCircle, DollarSign, Droplets, Info, Settings2, TrendingUp, Zap } from "lucide-react";
-import { useState } from "react";
+import { AlertCircle, DollarSign, Droplets, Info, RefreshCw, Settings2, TrendingUp, Zap } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Label } from "../ui/label";
@@ -70,7 +70,18 @@ const CreatePool = () => {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [creationResult, setCreationResult] = useState<PoolCreationResult | null>(null);
 
-  const { umi, connection, network } = useUmiStore();
+  // Token selection state
+  const [availableTokens, setAvailableTokens] = useState<Array<{
+    mint: string;
+    amount: bigint;
+    decimals: number;
+    symbol: string;
+    name: string;
+    formattedAmount: string;
+  }>>([]);
+  const [loadingTokens, setLoadingTokens] = useState(false);
+
+  const { umi, connection, network, getTokenBalances, signer, connectionStatus } = useUmiStore();
 
   const newConnection = connection();
 
@@ -103,6 +114,129 @@ const CreatePool = () => {
       computeBudgetMicroLamports: 46591500,
     },
   });
+
+  useEffect(() => {
+    const loadTokenBalances = async () => {
+      if (!signer || connectionStatus !== ConnectionStatus.CONNECTED) {
+        setAvailableTokens([]);
+        return;
+      }
+
+      setLoadingTokens(true);
+      try {
+        const balances = await getTokenBalances();
+        const formattedTokens = balances.map(token => ({
+          mint: token.mint.toString(),
+          amount: token.amount,
+          decimals: token.decimals,
+          symbol: token.symbol,
+          name: token.name,
+          formattedAmount: (Number(token.amount) / 10 ** token.decimals).toLocaleString()
+        }));
+        setAvailableTokens(formattedTokens);
+      } catch (error) {
+        console.error('Failed to load token balances:', error);
+        setAvailableTokens([]);
+      } finally {
+        setLoadingTokens(false);
+      }
+    };
+
+    loadTokenBalances();
+  }, [signer, connectionStatus, getTokenBalances]);
+
+  // Function to refresh token balances manually
+  const refreshTokenBalances = async () => {
+    if (!signer || connectionStatus !== ConnectionStatus.CONNECTED) return;
+
+    setLoadingTokens(true);
+    try {
+      const balances = await getTokenBalances();
+      const formattedTokens = balances.map(token => ({
+        mint: token.mint.toString(),
+        amount: token.amount,
+        decimals: token.decimals,
+        symbol: token.symbol,
+        name: token.name,
+        formattedAmount: (Number(token.amount) / 10 ** token.decimals).toLocaleString()
+      }));
+      setAvailableTokens(formattedTokens);
+    } catch (error) {
+      console.error('Failed to refresh token balances:', error);
+    } finally {
+      setLoadingTokens(false);
+    }
+  };
+
+  const TokenSelector = ({
+    label,
+    placeholder,
+    onValueChange,
+    value
+  }: {
+    label: string;
+    placeholder: string;
+    onValueChange: (value: string) => void;
+    value?: string;
+  }) => (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <FormLabel>{label}</FormLabel>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={refreshTokenBalances}
+          disabled={loadingTokens}
+          className="h-auto p-1 text-xs"
+        >
+          <RefreshCw className={`h-3 w-3 mr-1 ${loadingTokens ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
+      </div>
+      {signer && connectionStatus === ConnectionStatus.CONNECTED ? (
+        <Select
+          onValueChange={onValueChange}
+          value={value}
+          disabled={loadingTokens}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder={
+              loadingTokens
+                ? "Loading tokens..."
+                : availableTokens.length === 0
+                  ? "No tokens found"
+                  : placeholder
+            } />
+          </SelectTrigger>
+          <SelectContent>
+            {availableTokens.map((token) => (
+              <SelectItem key={token.mint} value={token.mint}>
+                <div className="flex items-center justify-between w-full">
+                  <div className="flex flex-col items-start">
+                    <span className="font-medium">{token.symbol}</span>
+                    <span className="text-xs text-muted-foreground truncate max-w-[200px]">
+                      {token.name}
+                    </span>
+                  </div>
+                  <div className="flex flex-col items-end ml-4">
+                    <span className="text-sm font-mono">{token.formattedAmount}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {token.mint.slice(0, 4)}...{token.mint.slice(-4)}
+                    </span>
+                  </div>
+                </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      ) : (
+        <div className="text-sm text-muted-foreground p-3 border rounded-md bg-muted/50">
+          {!signer ? "Connect your wallet to see available tokens" : "Connecting..."}
+        </div>
+      )}
+    </div>
+  );
 
   const handleCLMMSubmit = async (data: z.infer<typeof clmmPoolSchema>) => {
     if (!umi || !connection || !umi.identity) {
@@ -362,34 +496,71 @@ const CreatePool = () => {
                 <CardContent>
                   <Form {...clmmForm}>
                     <form onSubmit={clmmForm.handleSubmit(handleCLMMSubmit)} className="space-y-6">
-                      {/* Token Addresses */}
+                      {/* Token Selectors */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField
-                          control={clmmForm.control}
-                          name="mint1Address"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Token A Mint Address</FormLabel>
-                              <FormControl>
-                                <Input placeholder="Enter mint address..." {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={clmmForm.control}
-                          name="mint2Address"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Token B Mint Address</FormLabel>
-                              <FormControl>
-                                <Input placeholder="Enter mint address..." {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+                        <div>
+                          <TokenSelector
+                            label="Select Token A"
+                            placeholder="Choose Token A from wallet"
+                            onValueChange={(value) => {
+                              clmmForm.setValue("mint1Address", value);
+                            }}
+                            value={clmmForm.watch("mint1Address")}
+                          />
+
+                          <div className="relative mt-2">
+                            <div className="absolute inset-0 flex items-center">
+                              <span className="w-full border-t" />
+                            </div>
+                            <div className="relative flex justify-center text-xs uppercase">
+                              <span className="bg-background px-2 text-muted-foreground">Or enter manually</span>
+                            </div>
+                          </div>
+                          <FormField
+                            control={clmmForm.control}
+                            name="mint1Address"
+                            render={({ field }) => (
+                              <FormItem className="mt-2">
+                                <FormControl>
+                                  <Input placeholder="Enter Token A mint address..." {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        <div>
+                          <TokenSelector
+                            label="Select Token B"
+                            placeholder="Choose Token B from wallet"
+                            onValueChange={(value) => {
+                              clmmForm.setValue("mint2Address", value);
+                            }}
+                            value={clmmForm.watch("mint2Address")}
+                          />
+
+                          <div className="relative mt-2">
+                            <div className="absolute inset-0 flex items-center">
+                              <span className="w-full border-t" />
+                            </div>
+                            <div className="relative flex justify-center text-xs uppercase">
+                              <span className="bg-background px-2 text-muted-foreground">Or enter manually</span>
+                            </div>
+                          </div>
+
+                          <FormField
+                            control={clmmForm.control}
+                            name="mint2Address"
+                            render={({ field }) => (
+                              <FormItem className="mt-2">
+                                <FormControl>
+                                  <Input placeholder="Enter Token B mint address..." {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
                       </div>
 
                       {/* Initial Price */}
@@ -568,34 +739,70 @@ const CreatePool = () => {
                 <CardContent>
                   <Form {...cpmmForm}>
                     <form onSubmit={cpmmForm.handleSubmit(handleCPMMSubmit)} className="space-y-6">
-                      {/* Token Addresses */}
+                      {/* Token Selectors */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField
-                          control={cpmmForm.control}
-                          name="mintAAddress"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Token A Mint Address</FormLabel>
-                              <FormControl>
-                                <Input placeholder="Enter mint address..." {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={cpmmForm.control}
-                          name="mintBAddress"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Token B Mint Address</FormLabel>
-                              <FormControl>
-                                <Input placeholder="Enter mint address..." {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+                        <div>
+                          <TokenSelector
+                            label="Select Token A"
+                            placeholder="Choose Token A from wallet"
+                            onValueChange={(value) => {
+                              cpmmForm.setValue("mintAAddress", value);
+                            }}
+                            value={cpmmForm.watch("mintAAddress")}
+                          />
+
+                          <div className="relative mt-2">
+                            <div className="absolute inset-0 flex items-center">
+                              <span className="w-full border-t" />
+                            </div>
+                            <div className="relative flex justify-center text-xs uppercase">
+                              <span className="bg-background px-2 text-muted-foreground">Or enter manually</span>
+                            </div>
+                          </div>  <FormField
+                            control={cpmmForm.control}
+                            name="mintAAddress"
+                            render={({ field }) => (
+                              <FormItem className="mt-2">
+                                <FormControl>
+                                  <Input placeholder="Enter Token A mint address..." {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        <div>
+                          <TokenSelector
+                            label="Select Token B"
+                            placeholder="Choose Token B from wallet"
+                            onValueChange={(value) => {
+                              cpmmForm.setValue("mintBAddress", value);
+                            }}
+                            value={cpmmForm.watch("mintBAddress")}
+                          />
+
+                          <div className="relative mt-2">
+                            <div className="absolute inset-0 flex items-center">
+                              <span className="w-full border-t" />
+                            </div>
+                            <div className="relative flex justify-center text-xs uppercase">
+                              <span className="bg-background px-2 text-muted-foreground">Or enter manually</span>
+                            </div>
+                          </div>
+
+                          <FormField
+                            control={cpmmForm.control}
+                            name="mintBAddress"
+                            render={({ field }) => (
+                              <FormItem className="mt-2">
+                                <FormControl>
+                                  <Input placeholder="Enter Token B mint address..." {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
                       </div>
 
                       {/* Token Amounts */}
@@ -837,5 +1044,8 @@ const CreatePool = () => {
     </div>
   );
 };
+
+
+
 
 export default CreatePool;
