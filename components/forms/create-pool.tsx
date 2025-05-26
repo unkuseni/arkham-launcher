@@ -13,12 +13,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { type CreateCLMMPoolParams, createCLMMPool } from "@/lib/liquidity/clmm/create";
 import { type CreateCPMMPoolParams, createCPMMPool } from "@/lib/liquidity/cpmm/create";
 import useUmiStore from "@/store/useUmiStore";
+import { Network } from "@/store/useUmiStore";
 import { zodResolver } from "@hookform/resolvers/zod";
 import BN from "bn.js";
 import { AlertCircle, DollarSign, Droplets, Info, Settings2, TrendingUp, Zap } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { Label } from "../ui/label";
 
 // Pool type selection
 type PoolType = "clmm" | "cpmm";
@@ -28,11 +30,11 @@ const clmmPoolSchema = z.object({
   mint1Address: z.string().min(32, "Invalid mint address").max(44, "Invalid mint address"),
   mint2Address: z.string().min(32, "Invalid mint address").max(44, "Invalid mint address"),
   initialPrice: z.number().min(0.000001, "Initial price must be greater than 0"),
-  ammConfigIndex: z.number().min(0).max(20).default(0),
+  ammConfigIndex: z.number().min(0).max(20),
   fundOwner: z.string().optional(),
   description: z.string().max(200, "Description must be at most 200 characters").optional(),
-  computeBudgetUnits: z.number().min(100000).max(1400000).default(600000),
-  computeBudgetMicroLamports: z.number().min(1000).max(100000000).default(46591500),
+  computeBudgetUnits: z.number().min(100000).max(1400000),
+  computeBudgetMicroLamports: z.number().min(1000).max(100000000),
 });
 
 // CPMM Pool Schema
@@ -42,9 +44,9 @@ const cpmmPoolSchema = z.object({
   mintAAmount: z.number().min(0.000001, "Amount must be greater than 0"),
   mintBAmount: z.number().min(0.000001, "Amount must be greater than 0"),
   startTime: z.number().optional(),
-  feeConfigIndex: z.number().min(0).max(10).default(0),
-  computeBudgetUnits: z.number().min(100000).max(1400000).default(600000),
-  computeBudgetMicroLamports: z.number().min(1000).max(100000000).default(46591500),
+  feeConfigIndex: z.number().min(0).max(10),
+  computeBudgetUnits: z.number().min(100000).max(1400000),
+  computeBudgetMicroLamports: z.number().min(1000).max(100000000),
 });
 
 type CLMMPoolFormData = z.infer<typeof clmmPoolSchema>;
@@ -70,8 +72,10 @@ const CreatePool = () => {
 
   const { umi, connection, network } = useUmiStore();
 
+  const newConnection = connection();
+
   // CLMM Form
-  const clmmForm = useForm<CLMMPoolFormData>({
+  const clmmForm = useForm<z.infer<typeof clmmPoolSchema>>({
     resolver: zodResolver(clmmPoolSchema),
     defaultValues: {
       mint1Address: "",
@@ -86,7 +90,7 @@ const CreatePool = () => {
   });
 
   // CPMM Form
-  const cpmmForm = useForm<CPMMPoolFormData>({
+  const cpmmForm = useForm<z.infer<typeof cpmmPoolSchema>>({
     resolver: zodResolver(cpmmPoolSchema),
     defaultValues: {
       mintAAddress: "",
@@ -100,7 +104,7 @@ const CreatePool = () => {
     },
   });
 
-  const handleCLMMSubmit = async (data: CLMMPoolFormData) => {
+  const handleCLMMSubmit = async (data: z.infer<typeof clmmPoolSchema>) => {
     if (!umi || !connection || !umi.identity) {
       console.error("Wallet not connected. Please connect your wallet first.");
       return;
@@ -110,7 +114,7 @@ const CreatePool = () => {
     try {
       const params: CreateCLMMPoolParams = {
         umi,
-        connection,
+        connection: newConnection,
         network,
         signer: umi.identity,
         mint1Address: data.mint1Address,
@@ -141,7 +145,7 @@ const CreatePool = () => {
     }
   };
 
-  const handleCPMMSubmit = async (data: CPMMPoolFormData) => {
+  const handleCPMMSubmit = async (data: z.infer<typeof cpmmPoolSchema>) => {
     if (!umi || !connection || !umi.identity) {
       console.error("Wallet not connected. Please connect your wallet first.");
       return;
@@ -151,7 +155,7 @@ const CreatePool = () => {
     try {
       const params: CreateCPMMPoolParams = {
         umi,
-        connection,
+        connection: newConnection,
         network,
         signer: umi.identity,
         mintAAddress: data.mintAAddress,
@@ -183,7 +187,7 @@ const CreatePool = () => {
   };
 
   const getExplorerUrl = (txId: string) => {
-    const baseUrl = network === "mainnet" ? "https://solscan.io" : "https://solscan.io";
+    const baseUrl = network === Network.MAINNET ? "https://solscan.io" : "https://solscan.io";
     return `${baseUrl}/tx/${txId}?cluster=${network}`;
   };
 
@@ -211,7 +215,7 @@ const CreatePool = () => {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground">Pool Type</label>
+                  <Label className="text-sm font-medium text-muted-foreground">Pool Type</Label>
                   <div className="p-3 bg-background rounded-lg border">
                     <Badge variant={creationResult.type === "clmm" ? "default" : "secondary"}>
                       {creationResult.type.toUpperCase()}
@@ -219,19 +223,19 @@ const CreatePool = () => {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground">Pool ID</label>
+                  <Label className="text-sm font-medium text-muted-foreground">Pool ID</Label>
                   <div className="p-3 bg-background rounded-lg border font-mono text-sm break-all">
                     {creationResult.poolId}
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground">Transaction ID</label>
+                  <Label className="text-sm font-medium text-muted-foreground">Transaction ID</Label>
                   <div className="p-3 bg-background rounded-lg border font-mono text-sm break-all">
                     {creationResult.txId}
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground">Network</label>
+                  <Label className="text-sm font-medium text-muted-foreground">Network</Label>
                   <div className="p-3 bg-background rounded-lg border">
                     <Badge variant="outline">{network}</Badge>
                   </div>
@@ -458,7 +462,7 @@ const CreatePool = () => {
                           <Checkbox
                             id="show-advanced-clmm"
                             checked={showAdvanced}
-                            onCheckedChange={setShowAdvanced}
+                            onCheckedChange={(checked) => setShowAdvanced(checked === true)}
                           />
                           <label htmlFor="show-advanced-clmm" className="text-sm font-medium cursor-pointer flex items-center gap-2">
                             <Settings2 className="w-4 h-4" />
@@ -672,7 +676,7 @@ const CreatePool = () => {
                           <Checkbox
                             id="show-advanced-cpmm"
                             checked={showAdvanced}
-                            onCheckedChange={setShowAdvanced}
+                            onCheckedChange={(checked) => setShowAdvanced(checked === true)}
                           />
                           <label htmlFor="show-advanced-cpmm" className="text-sm font-medium cursor-pointer flex items-center gap-2">
                             <Settings2 className="w-4 h-4" />
