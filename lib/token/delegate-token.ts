@@ -18,7 +18,6 @@ import {
 } from "@metaplex-foundation/mpl-toolbox";
 import { TransactionBuilder, publicKey } from "@metaplex-foundation/umi";
 import { base58 } from "@metaplex-foundation/umi/serializers";
-import { Token } from "@raydium-io/raydium-sdk-v2";
 
 export interface DelegateTokenParams {
 	/** The mint address of the token to delegate */
@@ -83,12 +82,20 @@ export const delegateTokens = async (
 		let txBuilder: TransactionBuilder;
 		let rawAmount: bigint | undefined;
 
+		// Fetch mint info to get decimals
+		const { fetchMint } = await import("@metaplex-foundation/mpl-toolbox");
+		const mintInfo = await fetchMint(umi, mint);
+
+		// Convert human-readable amount to raw amount based on token decimals
+		rawAmount = BigInt(Math.round(amount * 10 ** mintInfo.decimals));
+
 		if (delegateType === "default") {
 			// Use Token Metadata delegation for NFTs or Token-2022 standards
 			txBuilder = delegateStandardV1(umi, {
 				mint,
 				tokenOwner: owner,
 				authority: signer,
+				amount: rawAmount,
 				delegate,
 				tokenStandard,
 			}).add(setComputeUnitPrice(umi, { microLamports: 2_500_000 }));
@@ -98,13 +105,6 @@ export const delegateTokens = async (
 				mint,
 				owner,
 			});
-
-			// Fetch mint info to get decimals
-			const { fetchMint } = await import("@metaplex-foundation/mpl-toolbox");
-			const mintInfo = await fetchMint(umi, mint);
-
-			// Convert human-readable amount to raw amount based on token decimals
-			rawAmount = BigInt(Math.round(amount * 10 ** mintInfo.decimals));
 
 			txBuilder = approveTokenDelegate(umi, {
 				source: tokenAccount,
@@ -217,6 +217,7 @@ export const delegatedTransfer = async (params: {
 	destinationOwnerAddress: string;
 	currentOwnerAddress?: string;
 	tokenStandard?: TokenStandard;
+	amount: number;
 }): Promise<{ signature: string }> => {
 	const {
 		mintAddress,
@@ -241,6 +242,16 @@ export const delegatedTransfer = async (params: {
 	try {
 		const mint = publicKey(mintAddress);
 		const destinationOwner = publicKey(destinationOwnerAddress);
+
+		// Fetch mint info to get decimals
+		const { fetchMint } = await import("@metaplex-foundation/mpl-toolbox");
+		const mintInfo = await fetchMint(umi, mint);
+
+		// Convert human-readable amount to raw amount based on token decimals
+		const rawAmount = BigInt(
+			Math.round(params.amount * 10 ** mintInfo.decimals),
+		);
+
 		const currentOwner = currentOwnerAddress
 			? publicKey(currentOwnerAddress)
 			: signer.publicKey;
@@ -249,6 +260,7 @@ export const delegatedTransfer = async (params: {
 			mint,
 			authority: signer, // The delegate authority
 			tokenOwner: currentOwner,
+			amount: rawAmount,
 			destinationOwner,
 			tokenStandard,
 		}).add(setComputeUnitPrice(umi, { microLamports: 2_500_000 }));
@@ -286,6 +298,7 @@ export const delegatedBurn = async (params: {
 	mintAddress: string;
 	tokenOwnerAddress?: string;
 	tokenStandard?: TokenStandard;
+	amount: number;
 }): Promise<{ signature: string }> => {
 	const {
 		mintAddress,
@@ -309,11 +322,20 @@ export const delegatedBurn = async (params: {
 			? publicKey(tokenOwnerAddress)
 			: signer.publicKey;
 
+		// Fetch mint info to get decimals
+		const { fetchMint } = await import("@metaplex-foundation/mpl-toolbox");
+		const mintInfo = await fetchMint(umi, mint);
+
+		const rawAmount = BigInt(
+			Math.round(params.amount * 10 ** mintInfo.decimals),
+		);
+
 		const txBuilder = burnV1(umi, {
 			mint,
 			authority: signer, // The delegate authority
 			tokenOwner,
 			tokenStandard,
+			amount: rawAmount,
 		}).add(setComputeUnitPrice(umi, { microLamports: 2_500_000 }));
 
 		const tx = await txBuilder.sendAndConfirm(umi, {
@@ -900,6 +922,7 @@ export const exampleStandardDelegateUsage = async () => {
 			mintAddress,
 			destinationOwnerAddress: newOwnerAddress,
 			tokenStandard: TokenStandard.NonFungible,
+			amount: 1,
 		});
 		console.log("Delegated transfer successful:", transferResult.signature);
 
