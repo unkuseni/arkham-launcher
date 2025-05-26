@@ -1,7 +1,6 @@
 "use client";
 
 import {
-	type DelegateTokenParams,
 	delegateTokens,
 	delegatedBurn,
 	delegatedTransfer,
@@ -14,7 +13,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { TokenStandard } from "@metaplex-foundation/mpl-token-metadata";
 import { findAssociatedTokenPda } from "@metaplex-foundation/mpl-toolbox";
 import { publicKey } from "@metaplex-foundation/umi";
-import { createWeb3JsRpc } from "@metaplex-foundation/umi-rpc-web3js";
 import { getAccount, getMint } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import {
@@ -282,7 +280,7 @@ const DelegateTokens = () => {
 
 // Delegate Form Component
 function DelegateForm() {
-	const { umi, getTokenBalances, signer, connectionStatus } = useUmiStore();
+	const { umi, getTokenBalances, signer, connectionStatus, connection } = useUmiStore();
 	const [availableTokens, setAvailableTokens] = useState<Array<{
 		mint: string;
 		amount: bigint;
@@ -297,7 +295,7 @@ function DelegateForm() {
 	const [result, setResult] = useState<OperationResult | null>(null);
 	const [open, setOpen] = useState(false);
 
-	const connection = createWeb3JsRpc(umi, umi.rpc.getEndpoint()).connection;
+	const newConnection = connection();
 
 	const form = useForm<DelegateValues>({
 		resolver: zodResolver(delegateSchema),
@@ -373,7 +371,7 @@ function DelegateForm() {
 			) {
 				try {
 					const mintPubkey = new PublicKey(vals.mintAddress);
-					const info = await getMint(connection, mintPubkey);
+					const info = await getMint(newConnection, mintPubkey);
 					setDecimals(info.decimals);
 
 					// Get token balance
@@ -389,7 +387,7 @@ function DelegateForm() {
 
 						try {
 							const tokenAccount = await getAccount(
-								connection,
+								newConnection,
 								new PublicKey(associatedTokenAddress[0]),
 							);
 							setTokenBalance(tokenAccount.amount);
@@ -404,7 +402,7 @@ function DelegateForm() {
 			}
 		});
 		return () => sub.unsubscribe();
-	}, [form, connection, umi]);
+	}, [form, newConnection, umi]);
 
 	const onSubmit = async (values: DelegateValues) => {
 		try {
@@ -777,7 +775,7 @@ function DelegateForm() {
 
 // Revoke Form Component
 function RevokeForm() {
-	const { umi, getTokenBalances, signer, connectionStatus } = useUmiStore();
+	const { umi, getTokenBalances, signer, connectionStatus, connection } = useUmiStore();
 	const [availableTokens, setAvailableTokens] = useState<Array<{
 		mint: string;
 		amount: bigint;
@@ -792,7 +790,7 @@ function RevokeForm() {
 	const [result, setResult] = useState<OperationResult | null>(null);
 	const [open, setOpen] = useState(false);
 
-	const connection = createWeb3JsRpc(umi, umi.rpc.getEndpoint()).connection;
+	const newConnection = connection();
 
 	const form = useForm<RevokeValues>({
 		resolver: zodResolver(revokeSchema),
@@ -842,7 +840,7 @@ function RevokeForm() {
 			) {
 				try {
 					const mintPubkey = new PublicKey(vals.mintAddress);
-					const info = await getMint(connection, mintPubkey);
+					const info = await getMint(newConnection, mintPubkey);
 					setDecimals(info.decimals);
 
 					// Get token balance logic here...
@@ -853,7 +851,7 @@ function RevokeForm() {
 			}
 		});
 		return () => sub.unsubscribe();
-	}, [form, connection]);
+	}, [form, newConnection]);
 
 
 	const refreshTokenBalances = async () => {

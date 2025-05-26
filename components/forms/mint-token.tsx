@@ -2,13 +2,11 @@
 import {
 	type MintToMultipleRecipient,
 	type MintToMultipleResult,
-	batchRecipients,
 	mintSPLTokens,
 	mintSPLTokensToMultiple,
 } from "@/lib/token/mint-token";
 import useUmiStore, { ConnectionStatus } from "@/store/useUmiStore";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { createWeb3JsRpc } from "@metaplex-foundation/umi-rpc-web3js";
 import { getMint } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import { Coins, Plus, Trash2, Upload, Users } from "lucide-react";
@@ -147,7 +145,7 @@ export default function MintTokens() {
 }
 
 function SingleMintForm() {
-	const { umi, getTokenBalances, signer, connectionStatus } = useUmiStore();
+	const { umi, getTokenBalances, signer, connectionStatus, connection } = useUmiStore();
 	const [availableTokens, setAvailableTokens] = useState<Array<{
 		mint: string;
 		amount: bigint;
@@ -161,7 +159,7 @@ function SingleMintForm() {
 	const [result, setResult] = useState<MintResult | null>(null);
 	const [open, setOpen] = useState(false);
 
-	const connection = createWeb3JsRpc(umi, umi.rpc.getEndpoint()).connection;
+	const newConnection = connection();
 
 	const form = useForm<SingleMintValues>({
 		resolver: zodResolver(singleMintSchema),
@@ -227,7 +225,7 @@ function SingleMintForm() {
 			if (name === "mintAddress" && vals.mintAddress) {
 				try {
 					const mintPubkey = new PublicKey(vals.mintAddress);
-					const info = await getMint(connection, mintPubkey);
+					const info = await getMint(newConnection, mintPubkey);
 					setDecimals(info.decimals);
 				} catch {
 					setDecimals(1);
@@ -235,7 +233,7 @@ function SingleMintForm() {
 			}
 		});
 		return () => sub.unsubscribe();
-	}, [form, connection]);
+	}, [form, newConnection]);
 
 	const onSubmit = async (values: SingleMintValues) => {
 		try {
@@ -458,7 +456,7 @@ function SingleMintForm() {
 }
 
 function MultiMintForm() {
-	const { umi, getTokenBalances, signer, connectionStatus } = useUmiStore();
+	const { umi, getTokenBalances, signer, connectionStatus, connection } = useUmiStore();
 	const [availableTokens, setAvailableTokens] = useState<Array<{
 		mint: string;
 		amount: bigint;
@@ -473,7 +471,7 @@ function MultiMintForm() {
 	const [open, setOpen] = useState(false);
 	const [isProcessing, setIsProcessing] = useState(false);
 
-	const connection = createWeb3JsRpc(umi, umi.rpc.getEndpoint()).connection;
+	const newConnection = connection();
 
 	const form = useForm<MultiMintValues>({
 		resolver: zodResolver(multiMintSchema),
@@ -548,7 +546,7 @@ function MultiMintForm() {
 			if (name === "mintAddress" && vals.mintAddress) {
 				try {
 					const mintPubkey = new PublicKey(vals.mintAddress);
-					const info = await getMint(connection, mintPubkey);
+					const info = await getMint(newConnection, mintPubkey);
 					setDecimals(info.decimals);
 				} catch {
 					setDecimals(1);
@@ -556,7 +554,7 @@ function MultiMintForm() {
 			}
 		});
 		return () => sub.unsubscribe();
-	}, [form, connection]);
+	}, [form, newConnection]);
 
 	const parseBulkInput = (input: string): MintToMultipleRecipient[] => {
 		const lines = input

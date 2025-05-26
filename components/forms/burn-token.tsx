@@ -6,12 +6,9 @@ import {
 } from "@/lib/token/burn-token";
 import useUmiStore, { ConnectionStatus } from "@/store/useUmiStore";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { findAssociatedTokenPda } from "@metaplex-foundation/mpl-toolbox";
-import { publicKey } from "@metaplex-foundation/umi";
-import { createWeb3JsRpc } from "@metaplex-foundation/umi-rpc-web3js";
-import { getAccount, getMint } from "@solana/spl-token";
+import { getMint } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
-import { AlertTriangle, Coins, Flame, Target } from "lucide-react";
+import { AlertTriangle, Flame, Target } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
