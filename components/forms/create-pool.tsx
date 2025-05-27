@@ -24,7 +24,6 @@ import { z } from "zod";
 import { Label } from "../ui/label";
 
 const SOL_MINT_ADDRESS = "So11111111111111111111111111111111111111112"; // Wrapped SOL mint
-const NATIVE_SOL_ADDRESS = "11111111111111111111111111111111";
 // Pool type selection
 type PoolType = "clmm" | "cpmm";
 
@@ -300,6 +299,10 @@ const CreatePool = () => {
 
     setIsCreating(true);
     try {
+
+
+
+
       const params: CreateCPMMPoolParams = {
         umi,
         connection: newConnection,
@@ -307,8 +310,8 @@ const CreatePool = () => {
         signer: umi.identity,
         mintAAddress: data.mintAAddress,
         mintBAddress: data.mintBAddress,
-        mintAAmount: new BN(Math.floor(data.mintAAmount * 1e9)), // Convert to lamports
-        mintBAmount: new BN(Math.floor(data.mintBAmount * 1e9)), // Convert to lamports
+        mintAAmount: new BN(Math.floor(data.mintAAmount * 10 ** 9)), // Convert to lamports
+        mintBAmount: new BN(Math.floor(data.mintBAmount * 10 ** 9)), // Convert to lamports
         startTime: data.startTime ? new BN(data.startTime) : undefined,
         feeConfigIndex: data.feeConfigIndex,
         computeBudgetUnits: data.computeBudgetUnits,

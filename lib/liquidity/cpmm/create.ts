@@ -1,9 +1,18 @@
 import type { Network } from "@/store/useUmiStore";
 import {
+	findAssociatedTokenPda,
+	transferSol,
+} from "@metaplex-foundation/mpl-toolbox";
+import {
 	type Signer,
+	TransactionBuilder,
 	type Umi,
+	publicKey,
 	signerIdentity,
+	sol,
+	transactionBuilder,
 } from "@metaplex-foundation/umi";
+import { fromWeb3JsTransaction } from "@metaplex-foundation/umi-web3js-adapters";
 import {
 	type ApiCpmmConfigInfo,
 	DEVNET_PROGRAM_ID,
@@ -15,6 +24,9 @@ import {
 import type { Connection } from "@solana/web3.js";
 import BN from "bn.js";
 import { initSdk, txVersion } from "..";
+
+const SOL_MINT_ADDRESS = "So11111111111111111111111111111111111111112"; // Wrapped SOL mint
+const NATIVE_SOL_MINT = "11111111111111111111111111111111";
 
 // Enhanced error types for better error handling
 export class CPMMPoolCreationError extends Error {
@@ -251,7 +263,34 @@ export const createCPMMPool = async (
 				: MAINNET_CREATE_CPMM_POOL_FEE_ACC;
 
 		console.log("Creating CPMM pool...");
-		const { execute, extInfo } = await raydium.cpmm.createPool({
+
+		if (mintBAddress === "11111111111111111111111111111111") {
+			const normalAmount = mintBAmount.toNumber() / 10 ** 9;
+			const wrapSolTx = transactionBuilder().add(
+				transferSol(umiWithSigner, {
+					destination: findAssociatedTokenPda(umiWithSigner, {
+						mint: publicKey(SOL_MINT_ADDRESS),
+						owner: signer.publicKey,
+					}),
+					amount: sol(normalAmount),
+				}),
+			);
+			await wrapSolTx.sendAndConfirm(umiWithSigner);
+		} else if (mintAAddress === NATIVE_SOL_MINT) {
+			const normalAmount = mintAAmount.toNumber() / 10 ** 9;
+			const wrapSolTx = transactionBuilder().add(
+				transferSol(umiWithSigner, {
+					destination: findAssociatedTokenPda(umiWithSigner, {
+						mint: publicKey(SOL_MINT_ADDRESS),
+						owner: signer.publicKey,
+					}),
+					amount: sol(normalAmount),
+				}),
+			);
+			await wrapSolTx.sendAndConfirm(umiWithSigner);
+		}
+
+		const { execute, extInfo, transaction } = await raydium.cpmm.createPool({
 			programId: currentCreateCpmmPoolProgram,
 			poolFeeAccount: currentCreateCpmmPoolFeeAcc,
 			mintA,
@@ -273,7 +312,11 @@ export const createCPMMPool = async (
 
 		// Execute transaction with confirmation
 		console.log("Sending transaction...");
-		const { txId } = await execute({ sendAndConfirm: true });
+		const umiTx = fromWeb3JsTransaction(transaction);
+		const signedTx = await umiWithSigner.identity.signTransaction(umiTx);
+		const resultTx = await umiWithSigner.rpc.sendTransaction(signedTx);
+		const txId = resultTx.toString();
+		// const { txId } = await execute({ sendAndConfirm: true });
 
 		// Transform pool keys for easier consumption
 		const poolKeys = Object.keys(extInfo.address).reduce(

@@ -1,4 +1,5 @@
 import { tokenBalances } from "@/lib/token/token-balances";
+import { mplCore } from "@metaplex-foundation/mpl-core";
 import { mplTokenMetadata } from "@metaplex-foundation/mpl-token-metadata";
 import { mplToolbox } from "@metaplex-foundation/mpl-toolbox";
 import {
@@ -201,6 +202,7 @@ const useUmiStore = create<UmiState>()((set, get) => ({
 				createNoopSigner(publicKey("11111111111111111111111111111111")),
 			),
 		)
+		.use(mplCore())
 		.use(mplToolbox())
 		.use(mplTokenMetadata()),
 
@@ -254,6 +256,7 @@ const useUmiStore = create<UmiState>()((set, get) => ({
 					createNoopSigner(publicKey("11111111111111111111111111111111")),
 				),
 			)
+			.use(mplCore())
 			.use(mplToolbox())
 			.use(mplTokenMetadata());
 
@@ -277,6 +280,7 @@ const useUmiStore = create<UmiState>()((set, get) => ({
 					createNoopSigner(publicKey("11111111111111111111111111111111")),
 				),
 			)
+			.use(mplCore())
 			.use(mplToolbox())
 			.use(mplTokenMetadata());
 
