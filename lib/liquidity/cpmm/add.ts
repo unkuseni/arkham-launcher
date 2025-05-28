@@ -4,6 +4,7 @@ import {
 	type Umi,
 	signerIdentity,
 } from "@metaplex-foundation/umi";
+import { fromWeb3JsTransaction } from "@metaplex-foundation/umi-web3js-adapters";
 import {
 	type ApiV3PoolInfoStandardItemCpmm,
 	type CpmmKeys,
@@ -314,7 +315,7 @@ export const addToCPMMPool = async (
 			txTipConfig?.address || "96gYZGLnJYVFmbjzopPSU6QiEV5fGqZNyN9nmNhvrZU5";
 
 		console.log("Adding liquidity to CPMM pool...");
-		const { execute } = await raydium.cpmm.addLiquidity({
+		const { transaction } = await raydium.cpmm.addLiquidity({
 			poolInfo,
 			poolKeys,
 			inputAmount,
@@ -333,7 +334,10 @@ export const addToCPMMPool = async (
 
 		// Execute transaction
 		console.log("Sending transaction...");
-		const { txId } = await execute({ sendAndConfirm: true });
+		const umiTx = fromWeb3JsTransaction(transaction);
+		const signedTx = await umiWithSigner.identity.signTransaction(umiTx);
+		const resultTx = await umiWithSigner.rpc.sendTransaction(signedTx);
+		const txId = resultTx.toString();
 
 		const result: AddLiquidityResult = {
 			txId,
