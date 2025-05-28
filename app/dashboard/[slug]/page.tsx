@@ -1,3 +1,4 @@
+import AddLiquidity from "@/components/forms/add-pool";
 import BurnTokens from "@/components/forms/burn-token";
 import CreatePool from "@/components/forms/create-pool";
 import CreateToken from "@/components/forms/create-token";
@@ -40,6 +41,9 @@ export default async function Page({
 			break;
 		case "create-pool":
 			content = <CreatePool />;
+			break;
+		case "add-liquidity":
+			content = <AddLiquidity />;
 			break;
 		default:
 			content = <p>Invalid slug</p>;
