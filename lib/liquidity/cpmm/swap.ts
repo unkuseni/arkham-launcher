@@ -1,3 +1,4 @@
+import { fromWeb3JsTransaction } from "@metaplex-foundation/umi-web3js-adapters";
 import { type CpmmRpcData, CurveCalculator } from "@raydium-io/raydium-sdk-v2";
 import { NATIVE_MINT } from "@solana/spl-token";
 import type { PublicKey } from "@solana/web3.js";
@@ -8,6 +9,7 @@ import {
 	type CPMMTransactionResult,
 	DEFAULT_POOL_IDS,
 	createTransactionConfig,
+	createTransactionResult,
 	executeTransaction,
 	getPoolData,
 	initializeRaydiumSDK,
@@ -117,7 +119,7 @@ export const swap = async (params: SwapParams): Promise<SwapResult> => {
 		const txConfig = createTransactionConfig(params);
 
 		// Execute swap
-		const { execute } = await raydium.cpmm.swap({
+		const { transaction } = await raydium.cpmm.swap({
 			poolInfo,
 			poolKeys,
 			inputAmount,
@@ -128,9 +130,13 @@ export const swap = async (params: SwapParams): Promise<SwapResult> => {
 		});
 
 		// Execute transaction and return result
-		const result = await executeTransaction(
-			() => execute({ sendAndConfirm: true }),
-			operation,
+
+		const umiTx = fromWeb3JsTransaction(transaction);
+		const signedTx = await params.umi.identity.signTransaction(umiTx);
+		const resultTx = await params.umi.rpc.sendTransaction(signedTx);
+		const txId = resultTx.toString();
+		const transactionResult = createTransactionResult(
+			txId,
 			poolId,
 			params.network,
 		);
@@ -139,7 +145,7 @@ export const swap = async (params: SwapParams): Promise<SwapResult> => {
 		const outputMint = baseIn ? poolInfo.mintB.address : poolInfo.mintA.address;
 
 		return {
-			...result,
+			...transactionResult,
 			inputAmount,
 			outputAmount: swapResult.destinationAmountSwapped,
 			inputMint,

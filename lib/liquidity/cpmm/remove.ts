@@ -1,3 +1,4 @@
+import { fromWeb3JsTransaction } from "@metaplex-foundation/umi-web3js-adapters";
 import BN from "bn.js";
 import {
 	type BaseCPMMParams,
@@ -6,7 +7,7 @@ import {
 	DEFAULT_POOL_IDS,
 	createSlippage,
 	createTransactionConfig,
-	executeTransaction,
+	createTransactionResult,
 	getPoolData,
 	initializeRaydiumSDK,
 	validateBaseCPMMParams,
@@ -71,7 +72,7 @@ export const removeFromCPMMPool = async (
 		const txConfig = createTransactionConfig(params);
 
 		// Execute liquidity removal
-		const { execute } = await raydium.cpmm.withdrawLiquidity({
+		const { transaction } = await raydium.cpmm.withdrawLiquidity({
 			poolInfo,
 			poolKeys,
 			lpAmount,
@@ -81,15 +82,18 @@ export const removeFromCPMMPool = async (
 		});
 
 		// Execute transaction and return result
-		const result = await executeTransaction(
-			() => execute({ sendAndConfirm: true }),
-			operation,
+		const umiTx = fromWeb3JsTransaction(transaction);
+		const signedTx = await params.umi.identity.signTransaction(umiTx);
+		const resultTx = await params.umi.rpc.sendTransaction(signedTx);
+		const txId = resultTx.toString();
+		const transactionResult = createTransactionResult(
+			txId,
 			poolId,
 			params.network,
 		);
 
 		return {
-			...result,
+			...transactionResult,
 			lpAmount,
 			slippage: slippagePercent,
 		};

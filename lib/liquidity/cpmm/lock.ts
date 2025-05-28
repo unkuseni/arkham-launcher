@@ -1,95 +1,156 @@
 import { Network } from "@/store/useUmiStore";
-import type { Umi } from "@metaplex-foundation/umi";
+import { type Signer, signerIdentity } from "@metaplex-foundation/umi";
+import { fromWeb3JsTransaction } from "@metaplex-foundation/umi-web3js-adapters";
 import {
 	type ApiV3PoolInfoStandardItemCpmm,
 	type CpmmKeys,
 	DEV_LOCK_CPMM_AUTH,
 	DEV_LOCK_CPMM_PROGRAM,
 } from "@raydium-io/raydium-sdk-v2";
-import type { Connection, PublicKey } from "@solana/web3.js";
-import type BN from "bn.js";
-import { initSdk, txVersion } from "../index";
-import { isValidCpmm } from "./utils";
+import BN from "bn.js";
+import {
+	type BaseCPMMParams,
+	CPMMOperationError,
+	type CPMMTransactionResult,
+	DEFAULT_POOL_IDS,
+	createTransactionConfig,
+	createTransactionResult,
+	getPoolData,
+	initializeRaydiumSDK,
+	validateBaseCPMMParams,
+} from "./base";
 
-export interface LockLiquidityParams {
-	umi: Umi;
-	connection: Connection;
-	network: Network;
-	poolIdParam?: string;
+export interface LockLiquidityParams extends BaseCPMMParams {
 	lpAmountParam?: BN;
-	txTipConfig?: {
-		amount: BN;
-	};
+	withMetadata?: boolean;
 }
 
-export const lockLiquidity = async ({
-	umi,
-	connection,
-	network,
-	poolIdParam,
-	lpAmountParam,
-	txTipConfig,
-}: LockLiquidityParams) => {
-	const raydium = await initSdk(umi, connection, network, {
-		loadToken: true,
-	});
-	const poolId = poolIdParam || "2umXxGh6jY63wDHHQ4yDv8BJbjzLNnKgYDwRqas75nnt";
+export interface LockLiquidityResult extends CPMMTransactionResult {
+	lpAmount: BN;
+	lockId?: string;
+}
 
-	let poolInfo: ApiV3PoolInfoStandardItemCpmm;
-	let poolKeys: CpmmKeys | undefined;
-	if (raydium.cluster === "mainnet") {
-		// note: api doesn't support get devnet pool info, so in devnet else we go rpc method
-		// if you wish to get pool info from rpc, also can modify logic to go rpc method directly
-		const data = await raydium.api.fetchPoolById({ ids: poolId });
-		poolInfo = data[0] as ApiV3PoolInfoStandardItemCpmm;
-		if (!isValidCpmm(poolInfo.programId))
-			throw new Error("target pool is not CPMM pool");
-	} else {
-		const data = await raydium.cpmm.getPoolInfoFromRpc(poolId);
-		poolInfo = data.poolInfo;
-		poolKeys = data.poolKeys;
-	}
+/**
+ * Lock liquidity tokens to prevent their withdrawal
+ */
+export const lockLiquidity = async (
+	params: LockLiquidityParams,
+): Promise<LockLiquidityResult> => {
+	const operation = "LOCK_LIQUIDITY";
 
-	/** if you know about how much liquidity amount can lock, you can skip code below to fetch account balance */
-	await raydium.account.fetchWalletTokenAccounts();
-	const lpBalance = raydium.account.tokenAccounts.find(
-		(a) => a.mint.toBase58() === poolInfo.lpMint.address,
-	);
-	if (!lpBalance) throw new Error(`you do not have balance in pool: ${poolId}`);
-	if (Network.MAINNET === network) {
-		const { execute, extInfo } = await raydium.cpmm.lockLp({
-			// programId: DEV_LOCK_CPMM_PROGRAM, // devnet
-			// authProgram: DEV_LOCK_CPMM_AUTH, // devnet
-			// poolKeys, // devnet
-			poolInfo,
-			lpAmount: lpAmountParam || lpBalance.amount,
-			withMetadata: true,
-			txVersion,
-		});
-		const { txId } = await execute({ sendAndConfirm: true });
-		if (network === Network.MAINNET) {
-			console.log("Liquidity locked:", {
-				txId: `https://explorer.solana.com/tx/${txId}`,
-			});
-		} else {
-			console.log("Liquidity locked:", {
-				txId: `https://explorer.solana.com/tx/${txId}?cluster=${network}`,
-			});
+	try {
+		// Validate parameters
+		validateBaseCPMMParams(params, operation);
+
+		const { poolIdParam, lpAmountParam, withMetadata = true } = params;
+
+		// Initialize Raydium SDK
+		console.log("Initializing Raydium SDK for liquidity locking...");
+		const raydium = await initializeRaydiumSDK(params, operation);
+
+		// Resolve pool ID
+		const poolId = poolIdParam || DEFAULT_POOL_IDS.SOL_USDC;
+		console.log(`Locking liquidity in pool: ${poolId}`);
+
+		// Fetch pool information
+		const { poolInfo, poolKeys } = await getPoolData(
+			raydium,
+			poolId,
+			operation,
+		);
+
+		// Fetch wallet token accounts to get LP balance
+		await raydium.account.fetchWalletTokenAccounts();
+		const lpBalance = raydium.account.tokenAccounts.find(
+			(a) => a.mint.toBase58() === poolInfo.lpMint.address,
+		);
+
+		if (!lpBalance) {
+			throw new CPMMOperationError(
+				`No LP token balance found for pool: ${poolId}`,
+				"NO_LP_BALANCE",
+				operation,
+			);
 		}
-		return txId;
+
+		// Determine LP amount to lock
+		const lpAmount = lpAmountParam || lpBalance.amount;
+
+		if (lpAmount.lte(new BN(0))) {
+			throw new CPMMOperationError(
+				"LP amount must be greater than zero",
+				"INVALID_LP_AMOUNT",
+				operation,
+			);
+		}
+
+		if (lpAmount.gt(lpBalance.amount)) {
+			throw new CPMMOperationError(
+				`Insufficient LP balance. Available: ${lpBalance.amount.toString()}, Requested: ${lpAmount.toString()}`,
+				"INSUFFICIENT_LP_BALANCE",
+				operation,
+			);
+		}
+
+		// Create transaction configuration
+		const txConfig = createTransactionConfig(params);
+
+		// Prepare lock configuration based on network
+		let lockConfig: any = {
+			poolInfo,
+			lpAmount,
+			withMetadata,
+			...txConfig,
+		};
+
+		// Add network-specific configuration
+		if (params.network !== Network.MAINNET) {
+			lockConfig = {
+				...lockConfig,
+				programId: DEV_LOCK_CPMM_PROGRAM,
+				authProgram: DEV_LOCK_CPMM_AUTH,
+				poolKeys,
+			};
+		}
+
+		// Execute liquidity lock
+		const { transaction, extInfo } = await raydium.cpmm.lockLp(lockConfig);
+
+		// Execute transaction using Umi
+		const umiTx = fromWeb3JsTransaction(transaction);
+		const signedTx = await params.umi.identity.signTransaction(umiTx);
+		const resultTx = await params.umi.rpc.sendTransaction(signedTx);
+		const txId = resultTx.toString();
+
+		// Create standardized transaction result
+		const transactionResult = createTransactionResult(
+			txId,
+			poolId,
+			params.network,
+		);
+
+		console.log("Liquidity locked successfully:", {
+			txId,
+			poolId,
+			lpAmount: lpAmount.toString(),
+			explorerUrl: transactionResult.explorerUrl,
+		});
+
+		return {
+			...transactionResult,
+			lpAmount,
+			lockId: extInfo?.lockId?.toString(),
+		};
+	} catch (error) {
+		if (error instanceof CPMMOperationError) {
+			throw error;
+		}
+
+		throw new CPMMOperationError(
+			`Failed to lock liquidity: ${error instanceof Error ? error.message : String(error)}`,
+			"LOCK_LIQUIDITY_FAILED",
+			operation,
+			error,
+		);
 	}
-	const { execute } = await raydium.cpmm.lockLp({
-		programId: DEV_LOCK_CPMM_PROGRAM,
-		authProgram: DEV_LOCK_CPMM_AUTH,
-		poolKeys,
-		poolInfo,
-		lpAmount: lpBalance.amount,
-		withMetadata: true,
-		txVersion,
-	});
-	const { txId } = await execute({ sendAndConfirm: true });
-	console.log("Liquidity locked:", {
-		txId: `https://explorer.solana.com/tx/${txId}?cluster=${network}`,
-	});
-	return txId;
 };
