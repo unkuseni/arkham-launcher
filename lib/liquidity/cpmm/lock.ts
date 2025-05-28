@@ -61,9 +61,23 @@ export const lockLiquidity = async (
 
 		// Fetch wallet token accounts to get LP balance
 		await raydium.account.fetchWalletTokenAccounts();
-		const lpBalance = raydium.account.tokenAccounts.find(
-			(a) => a.mint.toBase58() === poolInfo.lpMint.address,
-		);
+		interface TokenAccount {
+			mint: {
+				toBase58(): string;
+			};
+			amount: BN;
+		}
+
+		interface PoolInfo {
+			lpMint: {
+				address: string;
+			};
+		}
+
+		const lpBalance: TokenAccount | undefined =
+			raydium.account.tokenAccounts.find(
+				(a: TokenAccount) => a.mint.toBase58() === poolInfo.lpMint.address,
+			);
 
 		if (!lpBalance) {
 			throw new CPMMOperationError(
