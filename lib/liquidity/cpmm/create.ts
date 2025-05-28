@@ -290,7 +290,7 @@ export const createCPMMPool = async (
 			await wrapSolTx.sendAndConfirm(umiWithSigner);
 		}
 
-		const { execute, extInfo, transaction } = await raydium.cpmm.createPool({
+		const { extInfo, transaction } = await raydium.cpmm.createPool({
 			programId: currentCreateCpmmPoolProgram,
 			poolFeeAccount: currentCreateCpmmPoolFeeAcc,
 			mintA,
@@ -316,7 +316,6 @@ export const createCPMMPool = async (
 		const signedTx = await umiWithSigner.identity.signTransaction(umiTx);
 		const resultTx = await umiWithSigner.rpc.sendTransaction(signedTx);
 		const txId = resultTx.toString();
-		// const { txId } = await execute({ sendAndConfirm: true });
 
 		// Transform pool keys for easier consumption
 		const poolKeys = Object.keys(extInfo.address).reduce(
