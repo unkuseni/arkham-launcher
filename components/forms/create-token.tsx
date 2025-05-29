@@ -142,7 +142,7 @@ const TokenForm = () => {
 
 	async function onSubmit(values: z.infer<typeof formSchema>) {
 		try {
-			const { name, ticker, description, supply, socialLinks, decimals } =
+			const { name, ticker, description, supply, socialLinks, decimals, revokeFreeze, revokeMint, revokeUpdate } =
 				values;
 
 			// Image URL should have been set on selection
@@ -176,7 +176,7 @@ const TokenForm = () => {
 			const metadataUri = `https://gateway.pinata.cloud/ipfs/${data.IpfsHash}`;
 
 			// Mint the token
-			const mintInfo = { name, decimals, supply, metadataUri };
+			const mintInfo = { name, decimals, supply, metadataUri, symbol: ticker, revokeMint, revokeFreeze, revokeUpdate };
 			const txResult = await createSPLTokens(mintInfo);
 
 			// Show success modal
@@ -345,8 +345,8 @@ const TokenForm = () => {
 												placeholder="1,000,000,000"
 												value={
 													field.value === undefined ||
-													field.value === null ||
-													Number.isNaN(Number(field.value))
+														field.value === null ||
+														Number.isNaN(Number(field.value))
 														? ""
 														: Number(field.value).toLocaleString()
 												}

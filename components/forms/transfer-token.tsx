@@ -288,7 +288,6 @@ const EnhancedTransferComponent = () => {
 		loadTokensWithSol();
 	}, [signer, connectionStatus, getTokenBalances, umi]);
 
-
 	const addResult = (result: TransferResult<string | string[]>) => {
 		setResults((prev) => [
 			{
@@ -382,10 +381,11 @@ const EnhancedTransferComponent = () => {
 						].map((mode) => (
 							<Card
 								key={mode.id}
-								className={`cursor-pointer transition-all duration-200 hover:shadow-md ${transferMode === mode.id
-									? "ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-950/20"
-									: ""
-									}`}
+								className={`cursor-pointer transition-all duration-200 hover:shadow-md ${
+									transferMode === mode.id
+										? "ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-950/20"
+										: ""
+								}`}
 								onClick={() => setTransferMode(mode.id as TransferMode)}
 							>
 								<CardContent className="p-4">
@@ -438,10 +438,11 @@ const EnhancedTransferComponent = () => {
 							{results.map((result, index) => (
 								<div
 									key={`${result.timestamp.getTime()}-${index}`}
-									className={`p-3 rounded-lg border ${result.success
-										? "border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-900/20"
-										: "border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-900/20"
-										}`}
+									className={`p-3 rounded-lg border ${
+										result.success
+											? "border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-900/20"
+											: "border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-900/20"
+									}`}
 								>
 									<div className="flex items-center justify-between">
 										<div className="flex items-center gap-2">
@@ -1165,12 +1166,13 @@ const Alert = ({
 	variant?: "default" | "destructive" | "success";
 }) => (
 	<div
-		className={`rounded-lg border p-4 ${variant === "destructive"
-			? "border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-900/20"
-			: variant === "success"
-				? "border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-900/20"
-				: "border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/20"
-			}`}
+		className={`rounded-lg border p-4 ${
+			variant === "destructive"
+				? "border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-900/20"
+				: variant === "success"
+					? "border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-900/20"
+					: "border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/20"
+		}`}
 	>
 		{children}
 	</div>
