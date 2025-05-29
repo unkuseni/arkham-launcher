@@ -6,6 +6,7 @@ import DelegateTokens from "@/components/forms/delegate-token";
 import FreezeToken from "@/components/forms/freeze-token";
 import MintTokens from "@/components/forms/mint-token";
 import RemoveLiquidity from "@/components/forms/remove-pool";
+import SwapToken from "@/components/forms/swap-token";
 import TransferTokens from "@/components/forms/transfer-token";
 import UpdateToken from "@/components/forms/update-token";
 import type { ReactNode } from "react";
@@ -50,7 +51,7 @@ export default async function Page({
 			content = <RemoveLiquidity />;
 			break;
 		case "swap-tokens":
-			content = <p>Swap tokens</p>;
+			content = <SwapToken />;
 			break;
 		case "view-pool-info":
 			content = <p>View pool info</p>;

@@ -1,4 +1,5 @@
 import { fromWeb3JsTransaction } from "@metaplex-foundation/umi-web3js-adapters";
+import { base58 } from "@metaplex-foundation/umi/serializers";
 import {
 	type CpmmRpcData,
 	CurveCalculator,
@@ -150,7 +151,7 @@ export const swapBaseOut = async (
 		const umiTx = fromWeb3JsTransaction(transaction);
 		const signedTx = await params.umi.identity.signTransaction(umiTx);
 		const resultTx = await params.umi.rpc.sendTransaction(signedTx);
-		const txId = resultTx.toString();
+		const txId = base58.deserialize(resultTx)[0];
 
 		// Create standardized transaction result
 		const transactionResult = createTransactionResult(
