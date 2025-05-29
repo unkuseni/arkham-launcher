@@ -8,7 +8,6 @@ import {
 	transferTokens,
 } from "@metaplex-foundation/mpl-toolbox";
 import {
-	type PublicKey,
 	type Signer,
 	type TransactionBuilder,
 	type TransactionBuilderItemsInput,

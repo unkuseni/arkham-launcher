@@ -207,7 +207,7 @@ export const createSPLTokens = async (mintinfo: {
 		}
 		const tx = await txBuilder
 			.add(setComputeUnitPrice(umi, { microLamports: 2_500_000 }))
-			.sendAndConfirm(umi);
+			.sendAndConfirm(umi, { confirm: { commitment: "finalized" } });
 
 		const signature = base58.deserialize(tx.signature)[0];
 		console.log("\nTransaction Complete");
