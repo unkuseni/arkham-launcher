@@ -1,7 +1,6 @@
 "use client";
 
 import {
-	type DelegateTokenParams,
 	delegateTokens,
 	delegatedBurn,
 	delegatedTransfer,
@@ -9,12 +8,11 @@ import {
 	revokeStandardDelegate,
 	unlockAsset,
 } from "@/lib/token/delegate-token";
-import useUmiStore from "@/store/useUmiStore";
+import useUmiStore, { ConnectionStatus } from "@/store/useUmiStore";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { TokenStandard } from "@metaplex-foundation/mpl-token-metadata";
 import { findAssociatedTokenPda } from "@metaplex-foundation/mpl-toolbox";
 import { publicKey } from "@metaplex-foundation/umi";
-import { createWeb3JsRpc } from "@metaplex-foundation/umi-rpc-web3js";
 import { getAccount, getMint } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import {
@@ -95,12 +93,14 @@ const transferSchema = z.object({
 		.nonempty("Destination address is required"),
 	currentOwnerAddress: z.string().optional(),
 	tokenStandard: z.enum(["Fungible", "NonFungible"]),
+	amount: z.number({ invalid_type_error: "Amount must be a number" }).min(0.000001, "Amount must be greater than 0"),
 });
 
 const burnSchema = z.object({
 	mintAddress: z.string().nonempty("Mint address is required"),
 	tokenOwnerAddress: z.string().optional(),
 	tokenStandard: z.enum(["Fungible", "NonFungible"]),
+	amount: z.number({ invalid_type_error: "Amount must be a number" }).min(0.000001, "Amount must be greater than 0"),
 });
 
 const lockUnlockSchema = z.object({
@@ -280,14 +280,22 @@ const DelegateTokens = () => {
 
 // Delegate Form Component
 function DelegateForm() {
-	const { umi } = useUmiStore.getState();
-
+	const { umi, getTokenBalances, signer, connectionStatus, connection } = useUmiStore();
+	const [availableTokens, setAvailableTokens] = useState<Array<{
+		mint: string;
+		amount: bigint;
+		decimals: number;
+		symbol: string;
+		name: string;
+		formattedAmount: string;
+	}>>([]);
+	const [loadingTokens, setLoadingTokens] = useState(false);
 	const [decimals, setDecimals] = useState<number>(1);
 	const [tokenBalance, setTokenBalance] = useState<bigint | null>(null);
 	const [result, setResult] = useState<OperationResult | null>(null);
 	const [open, setOpen] = useState(false);
 
-	const connection = createWeb3JsRpc(umi, umi.rpc.getEndpoint()).connection;
+	const newConnection = connection();
 
 	const form = useForm<DelegateValues>({
 		resolver: zodResolver(delegateSchema),
@@ -301,6 +309,60 @@ function DelegateForm() {
 		},
 	});
 
+	// Load available tokens when component mounts or wallet connection changes
+	useEffect(() => {
+		const loadTokenBalances = async () => {
+			if (!signer || connectionStatus !== ConnectionStatus.CONNECTED) {
+				setAvailableTokens([]);
+				return;
+			}
+
+			setLoadingTokens(true);
+			try {
+				const balances = await getTokenBalances();
+				const formattedTokens = balances.map(token => ({
+					mint: token.mint.toString(),
+					amount: token.amount,
+					decimals: token.decimals,
+					symbol: token.symbol,
+					name: token.name,
+					formattedAmount: (Number(token.amount) / 10 ** token.decimals).toLocaleString()
+				}));
+				setAvailableTokens(formattedTokens);
+			} catch (error) {
+				console.error('Failed to load token balances:', error);
+				setAvailableTokens([]);
+			} finally {
+				setLoadingTokens(false);
+			}
+		};
+
+		loadTokenBalances();
+	}, [signer, connectionStatus, getTokenBalances]);
+
+	// Function to refresh token balances manually
+	const refreshTokenBalances = async () => {
+		if (!signer || connectionStatus !== ConnectionStatus.CONNECTED) return;
+
+		setLoadingTokens(true);
+		try {
+			const balances = await getTokenBalances();
+			const formattedTokens = balances.map(token => ({
+				mint: token.mint.toString(),
+				amount: token.amount,
+				decimals: token.decimals,
+				symbol: token.symbol,
+				name: token.name,
+				formattedAmount: (Number(token.amount) / 10 ** token.decimals).toLocaleString()
+			}));
+			setAvailableTokens(formattedTokens);
+		} catch (error) {
+			console.error('Failed to refresh token balances:', error);
+		} finally {
+			setLoadingTokens(false);
+		}
+	};
+
 	useEffect(() => {
 		const sub = form.watch(async (vals, { name }) => {
 			if (
@@ -309,7 +371,7 @@ function DelegateForm() {
 			) {
 				try {
 					const mintPubkey = new PublicKey(vals.mintAddress);
-					const info = await getMint(connection, mintPubkey);
+					const info = await getMint(newConnection, mintPubkey);
 					setDecimals(info.decimals);
 
 					// Get token balance
@@ -325,7 +387,7 @@ function DelegateForm() {
 
 						try {
 							const tokenAccount = await getAccount(
-								connection,
+								newConnection,
 								new PublicKey(associatedTokenAddress[0]),
 							);
 							setTokenBalance(tokenAccount.amount);
@@ -340,7 +402,7 @@ function DelegateForm() {
 			}
 		});
 		return () => sub.unsubscribe();
-	}, [form, connection, umi]);
+	}, [form, newConnection, umi]);
 
 	const onSubmit = async (values: DelegateValues) => {
 		try {
@@ -358,6 +420,8 @@ function DelegateForm() {
 			setResult(tx);
 			setOpen(true);
 			form.reset();
+			// Refresh token balances after successful delegation
+			await refreshTokenBalances();
 		} catch (err) {
 			const message = err instanceof Error ? err.message : String(err);
 			form.setError("mintAddress", { type: "manual", message });
@@ -375,6 +439,83 @@ function DelegateForm() {
 		<>
 			<Form {...form}>
 				<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+					{/* Token Selector */}
+					<div className="space-y-3">
+						<div className="flex items-center justify-between">
+							<FormLabel>Select Token to Delegate</FormLabel>
+							<Button
+								type="button"
+								variant="ghost"
+								size="sm"
+								onClick={refreshTokenBalances}
+								disabled={loadingTokens}
+								className="h-auto p-1 text-xs"
+							>
+								{loadingTokens ? (
+									<div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current mr-1" />
+								) : null}
+								Refresh
+							</Button>
+						</div>
+
+						{signer && connectionStatus === ConnectionStatus.CONNECTED ? (
+							<Select
+								onValueChange={(value) => {
+									const selectedToken = availableTokens.find(t => t.mint === value);
+									if (selectedToken) {
+										form.setValue("mintAddress", selectedToken.mint);
+										setDecimals(selectedToken.decimals);
+										setTokenBalance(selectedToken.amount);
+									}
+								}}
+								disabled={loadingTokens}
+							>
+								<SelectTrigger className="w-full">
+									<SelectValue placeholder={
+										loadingTokens
+											? "Loading tokens..."
+											: availableTokens.length === 0
+												? "No tokens found"
+												: "Select a token from your wallet"
+									} />
+								</SelectTrigger>
+								<SelectContent>
+									{availableTokens.map((token) => (
+										<SelectItem key={token.mint} value={token.mint}>
+											<div className="flex items-center justify-between w-full">
+												<div className="flex flex-col items-start">
+													<span className="font-medium">{token.symbol}</span>
+													<span className="text-xs text-muted-foreground truncate max-w-[200px]">
+														{token.name}
+													</span>
+												</div>
+												<div className="flex flex-col items-end ml-4">
+													<span className="text-sm font-mono">{token.formattedAmount}</span>
+													<span className="text-xs text-muted-foreground">
+														{token.mint.slice(0, 4)}...{token.mint.slice(-4)}
+													</span>
+												</div>
+											</div>
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						) : (
+							<div className="text-sm text-muted-foreground p-3 border rounded-md bg-muted/50">
+								{!signer ? "Connect your wallet to see available tokens" : "Connecting..."}
+							</div>
+						)}
+					</div>
+
+					<div className="relative">
+						<div className="absolute inset-0 flex items-center">
+							<span className="w-full border-t" />
+						</div>
+						<div className="relative flex justify-center text-xs uppercase">
+							<span className="bg-background px-2 text-muted-foreground">Or enter manually</span>
+						</div>
+					</div>
+
 					<FormField
 						control={form.control}
 						name="mintAddress"
@@ -384,7 +525,7 @@ function DelegateForm() {
 								<FormControl>
 									<Input
 										{...field}
-										placeholder="Enter token mint address"
+										placeholder="Enter token mint address manually"
 										className="font-mono"
 									/>
 								</FormControl>
@@ -634,9 +775,22 @@ function DelegateForm() {
 
 // Revoke Form Component
 function RevokeForm() {
-	const { umi } = useUmiStore.getState();
+	const { umi, getTokenBalances, signer, connectionStatus, connection } = useUmiStore();
+	const [availableTokens, setAvailableTokens] = useState<Array<{
+		mint: string;
+		amount: bigint;
+		decimals: number;
+		symbol: string;
+		name: string;
+		formattedAmount: string;
+	}>>([]);
+	const [loadingTokens, setLoadingTokens] = useState(false);
+	const [decimals, setDecimals] = useState<number>(1);
+	const [tokenBalance, setTokenBalance] = useState<bigint | null>(null);
 	const [result, setResult] = useState<OperationResult | null>(null);
 	const [open, setOpen] = useState(false);
+
+	const newConnection = connection();
 
 	const form = useForm<RevokeValues>({
 		resolver: zodResolver(revokeSchema),
@@ -647,6 +801,80 @@ function RevokeForm() {
 			delegateType: "default",
 		},
 	});
+
+	useEffect(() => {
+		const loadTokenBalances = async () => {
+			if (!signer || connectionStatus !== ConnectionStatus.CONNECTED) {
+				setAvailableTokens([]);
+				return;
+			}
+
+			setLoadingTokens(true);
+			try {
+				const balances = await getTokenBalances();
+				const formattedTokens = balances.map(token => ({
+					mint: token.mint.toString(),
+					amount: token.amount,
+					decimals: token.decimals,
+					symbol: token.symbol,
+					name: token.name,
+					formattedAmount: (Number(token.amount) / 10 ** token.decimals).toLocaleString()
+				}));
+				setAvailableTokens(formattedTokens);
+			} catch (error) {
+				console.error('Failed to load token balances:', error);
+				setAvailableTokens([]);
+			} finally {
+				setLoadingTokens(false);
+			}
+		};
+
+		loadTokenBalances();
+	}, [signer, connectionStatus, getTokenBalances]);
+
+	useEffect(() => {
+		const sub = form.watch(async (vals, { name }) => {
+			if (
+				(name === "mintAddress" || name === "ownerAddress") &&
+				vals.mintAddress
+			) {
+				try {
+					const mintPubkey = new PublicKey(vals.mintAddress);
+					const info = await getMint(newConnection, mintPubkey);
+					setDecimals(info.decimals);
+
+					// Get token balance logic here...
+				} catch {
+					setDecimals(1);
+					setTokenBalance(null);
+				}
+			}
+		});
+		return () => sub.unsubscribe();
+	}, [form, newConnection]);
+
+
+	const refreshTokenBalances = async () => {
+		if (!signer || connectionStatus !== ConnectionStatus.CONNECTED) return;
+
+		setLoadingTokens(true);
+		try {
+			const balances = await getTokenBalances();
+			const formattedTokens = balances.map(token => ({
+				mint: token.mint.toString(),
+				amount: token.amount,
+				decimals: token.decimals,
+				symbol: token.symbol,
+				name: token.name,
+				formattedAmount: (Number(token.amount) / 10 ** token.decimals).toLocaleString()
+			}));
+			setAvailableTokens(formattedTokens);
+		} catch (error) {
+			console.error('Failed to refresh token balances:', error);
+		} finally {
+			setLoadingTokens(false);
+		}
+	};
 
 	const onSubmit = async (values: RevokeValues) => {
 		try {
@@ -669,6 +897,83 @@ function RevokeForm() {
 		<>
 			<Form {...form}>
 				<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+					{/* Token Selector */}
+					<div className="space-y-3">
+						<div className="flex items-center justify-between">
+							<FormLabel>Select Token to Delegate</FormLabel>
+							<Button
+								type="button"
+								variant="ghost"
+								size="sm"
+								onClick={refreshTokenBalances}
+								disabled={loadingTokens}
+								className="h-auto p-1 text-xs"
+							>
+								{loadingTokens ? (
+									<div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current mr-1" />
+								) : null}
+								Refresh
+							</Button>
+						</div>
+
+						{signer && connectionStatus === ConnectionStatus.CONNECTED ? (
+							<Select
+								onValueChange={(value) => {
+									const selectedToken = availableTokens.find(t => t.mint === value);
+									if (selectedToken) {
+										form.setValue("mintAddress", selectedToken.mint);
+										setDecimals(selectedToken.decimals);
+										setTokenBalance(selectedToken.amount);
+									}
+								}}
+								disabled={loadingTokens}
+							>
+								<SelectTrigger className="w-full">
+									<SelectValue placeholder={
+										loadingTokens
+											? "Loading tokens..."
+											: availableTokens.length === 0
+												? "No tokens found"
+												: "Select a token from your wallet"
+									} />
+								</SelectTrigger>
+								<SelectContent>
+									{availableTokens.map((token) => (
+										<SelectItem key={token.mint} value={token.mint}>
+											<div className="flex items-center justify-between w-full">
+												<div className="flex flex-col items-start">
+													<span className="font-medium">{token.symbol}</span>
+													<span className="text-xs text-muted-foreground truncate max-w-[200px]">
+														{token.name}
+													</span>
+												</div>
+												<div className="flex flex-col items-end ml-4">
+													<span className="text-sm font-mono">{token.formattedAmount}</span>
+													<span className="text-xs text-muted-foreground">
+														{token.mint.slice(0, 4)}...{token.mint.slice(-4)}
+													</span>
+												</div>
+											</div>
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						) : (
+							<div className="text-sm text-muted-foreground p-3 border rounded-md bg-muted/50">
+								{!signer ? "Connect your wallet to see available tokens" : "Connecting..."}
+							</div>
+						)}
+					</div>
+
+					<div className="relative">
+						<div className="absolute inset-0 flex items-center">
+							<span className="w-full border-t" />
+						</div>
+						<div className="relative flex justify-center text-xs uppercase">
+							<span className="bg-background px-2 text-muted-foreground">Or enter manually</span>
+						</div>
+					</div>
+
 					<FormField
 						control={form.control}
 						name="mintAddress"
@@ -823,9 +1128,23 @@ function RevokeForm() {
 
 // Transfer Form Component
 function TransferForm() {
-	const { umi } = useUmiStore.getState();
+	const { umi, connectionStatus, signer, getTokenBalances, connection } = useUmiStore.getState();
+	const [availableTokens, setAvailableTokens] = useState<Array<{
+		mint: string;
+		amount: bigint;
+		decimals: number;
+		symbol: string;
+		name: string;
+		formattedAmount: string;
+	}>>([]);
+	const [loadingTokens, setLoadingTokens] = useState(false);
+	const [decimals, setDecimals] = useState<number>(1);
+	const [tokenBalance, setTokenBalance] = useState<bigint | null>(null);
 	const [result, setResult] = useState<OperationResult | null>(null);
 	const [open, setOpen] = useState(false);
+
+
+	const newConnection = connection();
 
 	const form = useForm<TransferValues>({
 		resolver: zodResolver(transferSchema),
@@ -834,8 +1153,83 @@ function TransferForm() {
 			destinationOwnerAddress: "",
 			currentOwnerAddress: "",
 			tokenStandard: "Fungible" as const,
+			amount: 0.0001,
 		},
 	});
+
+	useEffect(() => {
+		const loadTokenBalances = async () => {
+			if (!signer || connectionStatus !== ConnectionStatus.CONNECTED) {
+				setAvailableTokens([]);
+				return;
+			}
+
+			setLoadingTokens(true);
+			try {
+				const balances = await getTokenBalances();
+				const formattedTokens = balances.map(token => ({
+					mint: token.mint.toString(),
+					amount: token.amount,
+					decimals: token.decimals,
+					symbol: token.symbol,
+					name: token.name,
+					formattedAmount: (Number(token.amount) / 10 ** token.decimals).toLocaleString()
+				}));
+				setAvailableTokens(formattedTokens);
+			} catch (error) {
+				console.error('Failed to load token balances:', error);
+				setAvailableTokens([]);
+			} finally {
+				setLoadingTokens(false);
+			}
+		};
+
+		loadTokenBalances();
+	}, [signer, connectionStatus, getTokenBalances]);
+
+	useEffect(() => {
+		const sub = form.watch(async (vals, { name }) => {
+			if (
+				(name === "mintAddress" || name === "currentOwnerAddress") &&
+				vals.mintAddress
+			) {
+				try {
+					const mintPubkey = new PublicKey(vals.mintAddress);
+					const info = await getMint(newConnection, mintPubkey);
+					setDecimals(info.decimals);
+
+					// Get token balance logic here...
+				} catch {
+					setDecimals(1);
+					setTokenBalance(null);
+				}
+			}
+		});
+		return () => sub.unsubscribe();
+	}, [form, newConnection]);
+
+
+	const refreshTokenBalances = async () => {
+		if (!signer || connectionStatus !== ConnectionStatus.CONNECTED) return;
+
+		setLoadingTokens(true);
+		try {
+			const balances = await getTokenBalances();
+			const formattedTokens = balances.map(token => ({
+				mint: token.mint.toString(),
+				amount: token.amount,
+				decimals: token.decimals,
+				symbol: token.symbol,
+				name: token.name,
+				formattedAmount: (Number(token.amount) / 10 ** token.decimals).toLocaleString()
+			}));
+			setAvailableTokens(formattedTokens);
+		} catch (error) {
+			console.error('Failed to refresh token balances:', error);
+		} finally {
+			setLoadingTokens(false);
+		}
+	};
 
 	const onSubmit = async (values: TransferValues) => {
 		try {
@@ -843,6 +1237,7 @@ function TransferForm() {
 				mintAddress: values.mintAddress,
 				destinationOwnerAddress: values.destinationOwnerAddress,
 				currentOwnerAddress: values.currentOwnerAddress || undefined,
+				amount: values.amount,
 				tokenStandard:
 					values.tokenStandard === "Fungible"
 						? TokenStandard.Fungible
@@ -861,6 +1256,83 @@ function TransferForm() {
 		<>
 			<Form {...form}>
 				<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+					{/* Token Selector */}
+					<div className="space-y-3">
+						<div className="flex items-center justify-between">
+							<FormLabel>Select Token to Delegate</FormLabel>
+							<Button
+								type="button"
+								variant="ghost"
+								size="sm"
+								onClick={refreshTokenBalances}
+								disabled={loadingTokens}
+								className="h-auto p-1 text-xs"
+							>
+								{loadingTokens ? (
+									<div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current mr-1" />
+								) : null}
+								Refresh
+							</Button>
+						</div>
+
+						{signer && connectionStatus === ConnectionStatus.CONNECTED ? (
+							<Select
+								onValueChange={(value) => {
+									const selectedToken = availableTokens.find(t => t.mint === value);
+									if (selectedToken) {
+										form.setValue("mintAddress", selectedToken.mint);
+										setDecimals(selectedToken.decimals);
+										setTokenBalance(selectedToken.amount);
+									}
+								}}
+								disabled={loadingTokens}
+							>
+								<SelectTrigger className="w-full">
+									<SelectValue placeholder={
+										loadingTokens
+											? "Loading tokens..."
+											: availableTokens.length === 0
+												? "No tokens found"
+												: "Select a token from your wallet"
+									} />
+								</SelectTrigger>
+								<SelectContent>
+									{availableTokens.map((token) => (
+										<SelectItem key={token.mint} value={token.mint}>
+											<div className="flex items-center justify-between w-full">
+												<div className="flex flex-col items-start">
+													<span className="font-medium">{token.symbol}</span>
+													<span className="text-xs text-muted-foreground truncate max-w-[200px]">
+														{token.name}
+													</span>
+												</div>
+												<div className="flex flex-col items-end ml-4">
+													<span className="text-sm font-mono">{token.formattedAmount}</span>
+													<span className="text-xs text-muted-foreground">
+														{token.mint.slice(0, 4)}...{token.mint.slice(-4)}
+													</span>
+												</div>
+											</div>
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						) : (
+							<div className="text-sm text-muted-foreground p-3 border rounded-md bg-muted/50">
+								{!signer ? "Connect your wallet to see available tokens" : "Connecting..."}
+							</div>
+						)}
+					</div>
+
+					<div className="relative">
+						<div className="absolute inset-0 flex items-center">
+							<span className="w-full border-t" />
+						</div>
+						<div className="relative flex justify-center text-xs uppercase">
+							<span className="bg-background px-2 text-muted-foreground">Or enter manually</span>
+						</div>
+					</div>
+
 					<FormField
 						control={form.control}
 						name="mintAddress"
@@ -894,6 +1366,29 @@ function TransferForm() {
 								</FormControl>
 								<FormDescription>
 									The wallet that will receive the tokens
+								</FormDescription>
+								<FormMessage />
+							</FormItem>
+						)}
+					/>
+
+					<FormField
+						control={form.control}
+						name="amount"
+						render={({ field }) => (
+							<FormItem>
+								<FormLabel>Amount to Transfer</FormLabel>
+								<FormControl>
+									<Input
+										type="number"
+										step="any"
+										{...field}
+										onChange={(e) => field.onChange(Number(e.target.value))}
+										placeholder="Enter amount to transfer"
+									/>
+								</FormControl>
+								<FormDescription>
+									Amount of tokens to transfer using delegate authority
 								</FormDescription>
 								<FormMessage />
 							</FormItem>
@@ -1027,7 +1522,18 @@ function TransferForm() {
 
 // Burn Form Component
 function BurnForm() {
-	const { umi } = useUmiStore.getState();
+	const { umi, connectionStatus, getTokenBalances, signer, connection } = useUmiStore.getState();
+	const [availableTokens, setAvailableTokens] = useState<Array<{
+		mint: string;
+		amount: bigint;
+		decimals: number;
+		symbol: string;
+		name: string;
+		formattedAmount: string;
+	}>>([]);
+	const [loadingTokens, setLoadingTokens] = useState(false);
+	const [decimals, setDecimals] = useState<number>(1);
+	const [tokenBalance, setTokenBalance] = useState<bigint | null>(null);
 	const [result, setResult] = useState<OperationResult | null>(null);
 	const [open, setOpen] = useState(false);
 
@@ -1037,14 +1543,92 @@ function BurnForm() {
 			mintAddress: "",
 			tokenOwnerAddress: "",
 			tokenStandard: "Fungible",
+			amount: 0.00001,
 		},
 	});
+
+	const newConnection = connection();
+
+	useEffect(() => {
+		const loadTokenBalances = async () => {
+			if (!signer || connectionStatus !== ConnectionStatus.CONNECTED) {
+				setAvailableTokens([]);
+				return;
+			}
+
+			setLoadingTokens(true);
+			try {
+				const balances = await getTokenBalances();
+				const formattedTokens = balances.map(token => ({
+					mint: token.mint.toString(),
+					amount: token.amount,
+					decimals: token.decimals,
+					symbol: token.symbol,
+					name: token.name,
+					formattedAmount: (Number(token.amount) / 10 ** token.decimals).toLocaleString()
+				}));
+				setAvailableTokens(formattedTokens);
+			} catch (error) {
+				console.error('Failed to load token balances:', error);
+				setAvailableTokens([]);
+			} finally {
+				setLoadingTokens(false);
+			}
+		};
+
+		loadTokenBalances();
+	}, [signer, connectionStatus, getTokenBalances]);
+
+	useEffect(() => {
+		const sub = form.watch(async (vals, { name }) => {
+			if (
+				(name === "mintAddress" || name === "tokenOwnerAddress") &&
+				vals.mintAddress
+			) {
+				try {
+					const mintPubkey = new PublicKey(vals.mintAddress);
+					const info = await getMint(newConnection, mintPubkey);
+					setDecimals(info.decimals);
+
+					// Get token balance logic here...
+				} catch {
+					setDecimals(1);
+					setTokenBalance(null);
+				}
+			}
+		});
+		return () => sub.unsubscribe();
+	}, [form, newConnection]);
+
+
+	const refreshTokenBalances = async () => {
+		if (!signer || connectionStatus !== ConnectionStatus.CONNECTED) return;
+
+		setLoadingTokens(true);
+		try {
+			const balances = await getTokenBalances();
+			const formattedTokens = balances.map(token => ({
+				mint: token.mint.toString(),
+				amount: token.amount,
+				decimals: token.decimals,
+				symbol: token.symbol,
+				name: token.name,
+				formattedAmount: (Number(token.amount) / 10 ** token.decimals).toLocaleString()
+			}));
+			setAvailableTokens(formattedTokens);
+		} catch (error) {
+			console.error('Failed to refresh token balances:', error);
+		} finally {
+			setLoadingTokens(false);
+		}
+	};
 
 	const onSubmit = async (values: BurnValues) => {
 		try {
 			const tx = await delegatedBurn({
 				mintAddress: values.mintAddress,
 				tokenOwnerAddress: values.tokenOwnerAddress || undefined,
+				amount: values.amount,
 				tokenStandard:
 					values.tokenStandard === "Fungible"
 						? TokenStandard.Fungible
@@ -1063,6 +1647,83 @@ function BurnForm() {
 		<>
 			<Form {...form}>
 				<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+					{/* Token Selector */}
+					<div className="space-y-3">
+						<div className="flex items-center justify-between">
+							<FormLabel>Select Token to Delegate</FormLabel>
+							<Button
+								type="button"
+								variant="ghost"
+								size="sm"
+								onClick={refreshTokenBalances}
+								disabled={loadingTokens}
+								className="h-auto p-1 text-xs"
+							>
+								{loadingTokens ? (
+									<div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current mr-1" />
+								) : null}
+								Refresh
+							</Button>
+						</div>
+
+						{signer && connectionStatus === ConnectionStatus.CONNECTED ? (
+							<Select
+								onValueChange={(value) => {
+									const selectedToken = availableTokens.find(t => t.mint === value);
+									if (selectedToken) {
+										form.setValue("mintAddress", selectedToken.mint);
+										setDecimals(selectedToken.decimals);
+										setTokenBalance(selectedToken.amount);
+									}
+								}}
+								disabled={loadingTokens}
+							>
+								<SelectTrigger className="w-full">
+									<SelectValue placeholder={
+										loadingTokens
+											? "Loading tokens..."
+											: availableTokens.length === 0
+												? "No tokens found"
+												: "Select a token from your wallet"
+									} />
+								</SelectTrigger>
+								<SelectContent>
+									{availableTokens.map((token) => (
+										<SelectItem key={token.mint} value={token.mint}>
+											<div className="flex items-center justify-between w-full">
+												<div className="flex flex-col items-start">
+													<span className="font-medium">{token.symbol}</span>
+													<span className="text-xs text-muted-foreground truncate max-w-[200px]">
+														{token.name}
+													</span>
+												</div>
+												<div className="flex flex-col items-end ml-4">
+													<span className="text-sm font-mono">{token.formattedAmount}</span>
+													<span className="text-xs text-muted-foreground">
+														{token.mint.slice(0, 4)}...{token.mint.slice(-4)}
+													</span>
+												</div>
+											</div>
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						) : (
+							<div className="text-sm text-muted-foreground p-3 border rounded-md bg-muted/50">
+								{!signer ? "Connect your wallet to see available tokens" : "Connecting..."}
+							</div>
+						)}
+					</div>
+
+					<div className="relative">
+						<div className="absolute inset-0 flex items-center">
+							<span className="w-full border-t" />
+						</div>
+						<div className="relative flex justify-center text-xs uppercase">
+							<span className="bg-background px-2 text-muted-foreground">Or enter manually</span>
+						</div>
+					</div>
+
 					<FormField
 						control={form.control}
 						name="mintAddress"
@@ -1076,6 +1737,29 @@ function BurnForm() {
 										className="font-mono"
 									/>
 								</FormControl>
+								<FormMessage />
+							</FormItem>
+						)}
+					/>
+
+					<FormField
+						control={form.control}
+						name="amount"
+						render={({ field }) => (
+							<FormItem>
+								<FormLabel>Amount to Burn</FormLabel>
+								<FormControl>
+									<Input
+										type="number"
+										step="any"
+										{...field}
+										onChange={(e) => field.onChange(Number(e.target.value))}
+										placeholder="Enter amount to burn"
+									/>
+								</FormControl>
+								<FormDescription>
+									Amount of tokens to burn using delegate authority
+								</FormDescription>
 								<FormMessage />
 							</FormItem>
 						)}
@@ -1208,7 +1892,18 @@ function BurnForm() {
 
 // Lock Form Component
 function LockForm() {
-	const { umi } = useUmiStore.getState();
+	const { umi, connectionStatus, getTokenBalances, signer, connection } = useUmiStore.getState();
+	const [availableTokens, setAvailableTokens] = useState<Array<{
+		mint: string;
+		amount: bigint;
+		decimals: number;
+		symbol: string;
+		name: string;
+		formattedAmount: string;
+	}>>([]);
+	const [loadingTokens, setLoadingTokens] = useState(false);
+	const [decimals, setDecimals] = useState<number>(1);
+	const [tokenBalance, setTokenBalance] = useState<bigint | null>(null);
 	const [result, setResult] = useState<OperationResult | null>(null);
 	const [open, setOpen] = useState(false);
 
@@ -1220,6 +1915,82 @@ function LockForm() {
 			tokenStandard: "NonFungible",
 		},
 	});
+
+	const newConnection = connection();
+
+	useEffect(() => {
+		const loadTokenBalances = async () => {
+			if (!signer || connectionStatus !== ConnectionStatus.CONNECTED) {
+				setAvailableTokens([]);
+				return;
+			}
+
+			setLoadingTokens(true);
+			try {
+				const balances = await getTokenBalances();
+				const formattedTokens = balances.map(token => ({
+					mint: token.mint.toString(),
+					amount: token.amount,
+					decimals: token.decimals,
+					symbol: token.symbol,
+					name: token.name,
+					formattedAmount: (Number(token.amount) / 10 ** token.decimals).toLocaleString()
+				}));
+				setAvailableTokens(formattedTokens);
+			} catch (error) {
+				console.error('Failed to load token balances:', error);
+				setAvailableTokens([]);
+			} finally {
+				setLoadingTokens(false);
+			}
+		};
+
+		loadTokenBalances();
+	}, [signer, connectionStatus, getTokenBalances]);
+
+	useEffect(() => {
+		const sub = form.watch(async (vals, { name }) => {
+			if (
+				(name === "mintAddress" || name === "tokenOwnerAddress") &&
+				vals.mintAddress
+			) {
+				try {
+					const mintPubkey = new PublicKey(vals.mintAddress);
+					const info = await getMint(newConnection, mintPubkey);
+					setDecimals(info.decimals);
+
+					// Get token balance logic here...
+				} catch {
+					setDecimals(1);
+					setTokenBalance(null);
+				}
+			}
+		});
+		return () => sub.unsubscribe();
+	}, [form, newConnection]);
+
+
+	const refreshTokenBalances = async () => {
+		if (!signer || connectionStatus !== ConnectionStatus.CONNECTED) return;
+
+		setLoadingTokens(true);
+		try {
+			const balances = await getTokenBalances();
+			const formattedTokens = balances.map(token => ({
+				mint: token.mint.toString(),
+				amount: token.amount,
+				decimals: token.decimals,
+				symbol: token.symbol,
+				name: token.name,
+				formattedAmount: (Number(token.amount) / 10 ** token.decimals).toLocaleString()
+			}));
+			setAvailableTokens(formattedTokens);
+		} catch (error) {
+			console.error('Failed to refresh token balances:', error);
+		} finally {
+			setLoadingTokens(false);
+		}
+	};
 
 	const onSubmit = async (values: LockUnlockValues) => {
 		try {
@@ -1244,6 +2015,83 @@ function LockForm() {
 		<>
 			<Form {...form}>
 				<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+					{/* Token Selector */}
+					<div className="space-y-3">
+						<div className="flex items-center justify-between">
+							<FormLabel>Select Token to Delegate</FormLabel>
+							<Button
+								type="button"
+								variant="ghost"
+								size="sm"
+								onClick={refreshTokenBalances}
+								disabled={loadingTokens}
+								className="h-auto p-1 text-xs"
+							>
+								{loadingTokens ? (
+									<div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current mr-1" />
+								) : null}
+								Refresh
+							</Button>
+						</div>
+
+						{signer && connectionStatus === ConnectionStatus.CONNECTED ? (
+							<Select
+								onValueChange={(value) => {
+									const selectedToken = availableTokens.find(t => t.mint === value);
+									if (selectedToken) {
+										form.setValue("mintAddress", selectedToken.mint);
+										setDecimals(selectedToken.decimals);
+										setTokenBalance(selectedToken.amount);
+									}
+								}}
+								disabled={loadingTokens}
+							>
+								<SelectTrigger className="w-full">
+									<SelectValue placeholder={
+										loadingTokens
+											? "Loading tokens..."
+											: availableTokens.length === 0
+												? "No tokens found"
+												: "Select a token from your wallet"
+									} />
+								</SelectTrigger>
+								<SelectContent>
+									{availableTokens.map((token) => (
+										<SelectItem key={token.mint} value={token.mint}>
+											<div className="flex items-center justify-between w-full">
+												<div className="flex flex-col items-start">
+													<span className="font-medium">{token.symbol}</span>
+													<span className="text-xs text-muted-foreground truncate max-w-[200px]">
+														{token.name}
+													</span>
+												</div>
+												<div className="flex flex-col items-end ml-4">
+													<span className="text-sm font-mono">{token.formattedAmount}</span>
+													<span className="text-xs text-muted-foreground">
+														{token.mint.slice(0, 4)}...{token.mint.slice(-4)}
+													</span>
+												</div>
+											</div>
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						) : (
+							<div className="text-sm text-muted-foreground p-3 border rounded-md bg-muted/50">
+								{!signer ? "Connect your wallet to see available tokens" : "Connecting..."}
+							</div>
+						)}
+					</div>
+
+					<div className="relative">
+						<div className="absolute inset-0 flex items-center">
+							<span className="w-full border-t" />
+						</div>
+						<div className="relative flex justify-center text-xs uppercase">
+							<span className="bg-background px-2 text-muted-foreground">Or enter manually</span>
+						</div>
+					</div>
+
 					<FormField
 						control={form.control}
 						name="mintAddress"
@@ -1391,7 +2239,18 @@ function LockForm() {
 
 // Unlock Form Component
 function UnlockForm() {
-	const { umi } = useUmiStore.getState();
+	const { umi, connectionStatus, getTokenBalances, signer, connection } = useUmiStore.getState();
+	const [availableTokens, setAvailableTokens] = useState<Array<{
+		mint: string;
+		amount: bigint;
+		decimals: number;
+		symbol: string;
+		name: string;
+		formattedAmount: string;
+	}>>([]);
+	const [loadingTokens, setLoadingTokens] = useState(false);
+	const [decimals, setDecimals] = useState<number>(1);
+	const [tokenBalance, setTokenBalance] = useState<bigint | null>(null);
 	const [result, setResult] = useState<OperationResult | null>(null);
 	const [open, setOpen] = useState(false);
 
@@ -1403,6 +2262,88 @@ function UnlockForm() {
 			tokenStandard: "NonFungible",
 		},
 	});
+
+	const newConnection = connection();
+
+	useEffect(() => {
+		const loadTokenBalances = async () => {
+			if (!signer || connectionStatus !== ConnectionStatus.CONNECTED) {
+				setAvailableTokens([]);
+				return;
+			}
+
+			setLoadingTokens(true);
+			try {
+				const balances = await getTokenBalances();
+				const formattedTokens = balances.map(token => ({
+					mint: token.mint.toString(),
+					amount: token.amount,
+					decimals: token.decimals,
+					symbol: token.symbol,
+					name: token.name,
+					formattedAmount: (Number(token.amount) / 10 ** token.decimals).toLocaleString()
+				}));
+				setAvailableTokens(formattedTokens);
+			} catch (error) {
+				console.error('Failed to load token balances:', error);
+				setAvailableTokens([]);
+			} finally {
+				setLoadingTokens(false);
+			}
+		};
+
+		loadTokenBalances();
+	}, [signer, connectionStatus, getTokenBalances]);
+
+	useEffect(() => {
+		const sub = form.watch(async (vals, { name }) => {
+			if (
+				(name === "mintAddress" || name === "tokenOwnerAddress") &&
+				vals.mintAddress
+			) {
+				try {
+					const mintPubkey = new PublicKey(vals.mintAddress);
+					const info = await getMint(newConnection, mintPubkey);
+					setDecimals(info.decimals);
+
+					// Get token balance logic here...
+				} catch {
+					setDecimals(1);
+					setTokenBalance(null);
+				}
+			}
+		});
+		return () => sub.unsubscribe();
+	}, [form, newConnection]);
+
+
+	/*************  ✨ Windsurf Command ⭐  *************/
+	/**
+	 * Refreshes the list of tokens that are available to be delegated.
+	 * Should be called whenever the user's token balances change.
+
+/*******  509c68bd-27cf-4969-a02d-79720ce3bcdf  *******/
+	const refreshTokenBalances = async () => {
+		if (!signer || connectionStatus !== ConnectionStatus.CONNECTED) return;
+
+		setLoadingTokens(true);
+		try {
+			const balances = await getTokenBalances();
+			const formattedTokens = balances.map(token => ({
+				mint: token.mint.toString(),
+				amount: token.amount,
+				decimals: token.decimals,
+				symbol: token.symbol,
+				name: token.name,
+				formattedAmount: (Number(token.amount) / 10 ** token.decimals).toLocaleString()
+			}));
+			setAvailableTokens(formattedTokens);
+		} catch (error) {
+			console.error('Failed to refresh token balances:', error);
+		} finally {
+			setLoadingTokens(false);
+		}
+	};
 
 	const onSubmit = async (values: LockUnlockValues) => {
 		try {
@@ -1427,6 +2368,84 @@ function UnlockForm() {
 		<>
 			<Form {...form}>
 				<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+
+					{/* Token Selector */}
+					<div className="space-y-3">
+						<div className="flex items-center justify-between">
+							<FormLabel>Select Token to Delegate</FormLabel>
+							<Button
+								type="button"
+								variant="ghost"
+								size="sm"
+								onClick={refreshTokenBalances}
+								disabled={loadingTokens}
+								className="h-auto p-1 text-xs"
+							>
+								{loadingTokens ? (
+									<div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current mr-1" />
+								) : null}
+								Refresh
+							</Button>
+						</div>
+
+						{signer && connectionStatus === ConnectionStatus.CONNECTED ? (
+							<Select
+								onValueChange={(value) => {
+									const selectedToken = availableTokens.find(t => t.mint === value);
+									if (selectedToken) {
+										form.setValue("mintAddress", selectedToken.mint);
+										setDecimals(selectedToken.decimals);
+										setTokenBalance(selectedToken.amount);
+									}
+								}}
+								disabled={loadingTokens}
+							>
+								<SelectTrigger className="w-full">
+									<SelectValue placeholder={
+										loadingTokens
+											? "Loading tokens..."
+											: availableTokens.length === 0
+												? "No tokens found"
+												: "Select a token from your wallet"
+									} />
+								</SelectTrigger>
+								<SelectContent>
+									{availableTokens.map((token) => (
+										<SelectItem key={token.mint} value={token.mint}>
+											<div className="flex items-center justify-between w-full">
+												<div className="flex flex-col items-start">
+													<span className="font-medium">{token.symbol}</span>
+													<span className="text-xs text-muted-foreground truncate max-w-[200px]">
+														{token.name}
+													</span>
+												</div>
+												<div className="flex flex-col items-end ml-4">
+													<span className="text-sm font-mono">{token.formattedAmount}</span>
+													<span className="text-xs text-muted-foreground">
+														{token.mint.slice(0, 4)}...{token.mint.slice(-4)}
+													</span>
+												</div>
+											</div>
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						) : (
+							<div className="text-sm text-muted-foreground p-3 border rounded-md bg-muted/50">
+								{!signer ? "Connect your wallet to see available tokens" : "Connecting..."}
+							</div>
+						)}
+					</div>
+
+					<div className="relative">
+						<div className="absolute inset-0 flex items-center">
+							<span className="w-full border-t" />
+						</div>
+						<div className="relative flex justify-center text-xs uppercase">
+							<span className="bg-background px-2 text-muted-foreground">Or enter manually</span>
+						</div>
+					</div>
+
 					<FormField
 						control={form.control}
 						name="mintAddress"

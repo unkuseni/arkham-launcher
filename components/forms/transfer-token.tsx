@@ -59,6 +59,9 @@ import {
 	TooltipTrigger,
 } from "../ui/tooltip";
 
+const SOL_MINT_ADDRESS = "So11111111111111111111111111111111111111112"; // Wrapped SOL mint
+const NATIVE_SOL_ADDRESS = "11111111111111111111111111111111";
+
 // Icons
 const PlusIcon = () => (
 	<svg
@@ -250,10 +253,41 @@ const EnhancedTransferComponent = () => {
 
 	// Fetch token balances
 	useEffect(() => {
-		if (signer && connectionStatus === ConnectionStatus.CONNECTED) {
-			getTokenBalances().then(setTokens).catch(console.error);
-		}
-	}, [signer, connectionStatus, getTokenBalances]);
+		const loadTokensWithSol = async () => {
+			if (!signer || !umi || connectionStatus !== ConnectionStatus.CONNECTED) {
+				setTokens([]);
+				return;
+			}
+
+			try {
+				// Get SPL token balances
+				const splTokens = await getTokenBalances();
+
+				// Get SOL balance using UMI
+				const solBalanceResult = await umi.rpc.getBalance(signer.publicKey);
+				const solBalance = Number(solBalanceResult.basisPoints);
+
+				// Create SOL token entry
+				const solToken: RawBalance = {
+					mint: SOL_MINT_ADDRESS,
+					amount: BigInt(solBalance),
+					decimals: 9,
+					symbol: "SOL",
+					name: "Solana",
+				};
+
+				// Combine SOL with other tokens
+				const allTokens = [solToken, ...splTokens];
+				setTokens(allTokens);
+			} catch (err) {
+				console.error("Failed to load token balances:", err);
+				setTokens([]);
+			}
+		};
+
+		loadTokensWithSol();
+	}, [signer, connectionStatus, getTokenBalances, umi]);
+
 
 	const addResult = (result: TransferResult<string | string[]>) => {
 		setResults((prev) => [
@@ -348,11 +382,10 @@ const EnhancedTransferComponent = () => {
 						].map((mode) => (
 							<Card
 								key={mode.id}
-								className={`cursor-pointer transition-all duration-200 hover:shadow-md ${
-									transferMode === mode.id
-										? "ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-950/20"
-										: ""
-								}`}
+								className={`cursor-pointer transition-all duration-200 hover:shadow-md ${transferMode === mode.id
+									? "ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-950/20"
+									: ""
+									}`}
 								onClick={() => setTransferMode(mode.id as TransferMode)}
 							>
 								<CardContent className="p-4">
@@ -405,11 +438,10 @@ const EnhancedTransferComponent = () => {
 							{results.map((result, index) => (
 								<div
 									key={`${result.timestamp.getTime()}-${index}`}
-									className={`p-3 rounded-lg border ${
-										result.success
-											? "border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-900/20"
-											: "border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-900/20"
-									}`}
+									className={`p-3 rounded-lg border ${result.success
+										? "border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-900/20"
+										: "border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-900/20"
+										}`}
 								>
 									<div className="flex items-center justify-between">
 										<div className="flex items-center gap-2">
@@ -726,7 +758,16 @@ const OneToManyTransferForm = ({
 															key={token.mint.toString()}
 															value={token.mint.toString()}
 														>
-															{token.symbol || "Unknown"}
+															<div className="flex items-center gap-1">
+																<span>{token.name || "Unknown"}</span>
+																<span>({token.symbol || "Unknown"})</span>
+																<span className="text-xs text-muted-foreground ml-2">
+																	{(
+																		Number(token.amount) /
+																		10 ** token.decimals
+																	).toLocaleString()}
+																</span>
+															</div>
 														</SelectItem>
 													))}
 												</SelectContent>
@@ -956,7 +997,16 @@ const ManyToOneTransferForm = ({
 															key={token.mint.toString()}
 															value={token.mint.toString()}
 														>
-															{token.symbol || "Unknown"}
+															<div className="flex items-center gap-1">
+																<span>{token.name || "Unknown"}</span>
+																<span>({token.symbol || "Unknown"})</span>
+																<span className="text-xs text-muted-foreground ml-2">
+																	{(
+																		Number(token.amount) /
+																		10 ** token.decimals
+																	).toLocaleString()}
+																</span>
+															</div>
 														</SelectItem>
 													))}
 												</SelectContent>
@@ -1115,13 +1165,12 @@ const Alert = ({
 	variant?: "default" | "destructive" | "success";
 }) => (
 	<div
-		className={`rounded-lg border p-4 ${
-			variant === "destructive"
-				? "border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-900/20"
-				: variant === "success"
-					? "border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-900/20"
-					: "border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/20"
-		}`}
+		className={`rounded-lg border p-4 ${variant === "destructive"
+			? "border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-900/20"
+			: variant === "success"
+				? "border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-900/20"
+				: "border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/20"
+			}`}
 	>
 		{children}
 	</div>
@@ -1211,13 +1260,42 @@ const TransferTokenForm = () => {
 	});
 
 	// Fetch balances when component mounts or wallet connection changes
+	// Fetch balances including SOL when component mounts or wallet connection changes
 	useEffect(() => {
-		if (signer && connectionStatus === ConnectionStatus.CONNECTED) {
-			getTokenBalances()
-				.then((list) => setTokens(list))
-				.catch((err) => console.error("Failed to load token balances:", err));
-		}
-	}, [getTokenBalances, signer, connectionStatus]);
+		const loadTokensWithSol = async () => {
+			if (!signer || !umi || connectionStatus !== ConnectionStatus.CONNECTED) {
+				setTokens([]);
+				return;
+			}
+
+			try {
+				// Get SPL token balances
+				const splTokens = await getTokenBalances();
+
+				// Get SOL balance using UMI
+				const solBalanceResult = await umi.rpc.getBalance(signer.publicKey);
+				const solBalance = Number(solBalanceResult.basisPoints);
+
+				// Create SOL token entry
+				const solToken: RawBalance = {
+					mint: SOL_MINT_ADDRESS, // Type assertion for compatibility
+					amount: BigInt(solBalance),
+					decimals: 9,
+					symbol: "SOL",
+					name: "Solana",
+				};
+
+				// Combine SOL with other tokens, SOL first
+				const allTokens = [solToken, ...splTokens];
+				setTokens(allTokens);
+			} catch (err) {
+				console.error("Failed to load token balances:", err);
+				setTokens([]);
+			}
+		};
+
+		loadTokensWithSol();
+	}, [getTokenBalances, signer, connectionStatus, umi]);
 
 	const onSubmit = async (values: FormValues) => {
 		if (!signer || !umi) {
@@ -1646,8 +1724,11 @@ const ManyAssetsToSingleForm = ({
 																	key={token.mint.toString()}
 																	value={token.mint.toString()}
 																>
-																	<div className="flex justify-between w-full">
-																		<span>{token.symbol || "Unknown"}</span>
+																	<div className="flex justify-between w-full gap-3">
+																		<div className="flex items-center gap-1">
+																			<span>{token.name || "Unknown"}</span>
+																			<span>({token.symbol || "Unknown"})</span>
+																		</div>
 																		<span className="text-xs text-muted-foreground">
 																			{(
 																				Number(token.amount) /
@@ -1870,7 +1951,16 @@ const ManyAssetsToManyForm = ({
 																		key={token.mint.toString()}
 																		value={token.mint.toString()}
 																	>
-																		{token.symbol || "Unknown"}
+																		<div className="flex items-center gap-1">
+																			<span>{token.name || "Unknown"}</span>
+																			<span>({token.symbol || "Unknown"})</span>
+																			<span className="text-xs text-muted-foreground ml-2">
+																				{(
+																					Number(token.amount) /
+																					10 ** token.decimals
+																				).toLocaleString()}
+																			</span>
+																		</div>
 																	</SelectItem>
 																))}
 															</SelectContent>

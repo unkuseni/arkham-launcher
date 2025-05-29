@@ -78,7 +78,9 @@ export interface ThawTokenParams {
 	ownerAddress?: string;
 }
 
-export const thawTokens = async (params: ThawTokenParams) => {
+export const thawTokens = async (
+	params: ThawTokenParams,
+): Promise<{ signature: string }> => {
 	const { mintAddress, ownerAddress } = params;
 	const { umi, signer } = useUmiStore.getState();
 

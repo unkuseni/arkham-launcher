@@ -1,8 +1,12 @@
+import AddLiquidity from "@/components/forms/add-pool";
 import BurnTokens from "@/components/forms/burn-token";
+import CreatePool from "@/components/forms/create-pool";
 import CreateToken from "@/components/forms/create-token";
 import DelegateTokens from "@/components/forms/delegate-token";
 import FreezeToken from "@/components/forms/freeze-token";
 import MintTokens from "@/components/forms/mint-token";
+import RemoveLiquidity from "@/components/forms/remove-pool";
+import SwapToken from "@/components/forms/swap-token";
 import TransferTokens from "@/components/forms/transfer-token";
 import UpdateToken from "@/components/forms/update-token";
 import type { ReactNode } from "react";
@@ -36,6 +40,21 @@ export default async function Page({
 			break;
 		case "freeze-token":
 			content = <FreezeToken />;
+			break;
+		case "create-pool":
+			content = <CreatePool />;
+			break;
+		case "add-liquidity":
+			content = <AddLiquidity />;
+			break;
+		case "remove-liquidity":
+			content = <RemoveLiquidity />;
+			break;
+		case "swap-tokens":
+			content = <SwapToken />;
+			break;
+		case "view-pool-info":
+			content = <p>View pool info</p>;
 			break;
 		default:
 			content = <p>Invalid slug</p>;

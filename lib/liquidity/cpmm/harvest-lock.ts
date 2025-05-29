@@ -1,96 +1,145 @@
 import { Network } from "@/store/useUmiStore";
-import type { Umi } from "@metaplex-foundation/umi";
+import { fromWeb3JsTransaction } from "@metaplex-foundation/umi-web3js-adapters";
 import {
 	type ApiV3PoolInfoStandardItemCpmm,
 	type CpmmKeys,
 	DEV_LOCK_CPMM_AUTH,
 	DEV_LOCK_CPMM_PROGRAM,
 } from "@raydium-io/raydium-sdk-v2";
-import { type Connection, PublicKey } from "@solana/web3.js";
+import { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
-import { initSdk, txVersion } from "../index";
-import { isValidCpmm } from "./utils";
+import {
+	type BaseCPMMParams,
+	CPMMOperationError,
+	type CPMMTransactionResult,
+	DEFAULT_POOL_IDS,
+	createTransactionConfig,
+	createTransactionResult,
+	getPoolData,
+	initializeRaydiumSDK,
+	validateBaseCPMMParams,
+} from "./base";
 
-export interface HarvestLockLiquidityParams {
-	umi: Umi;
-	connection: Connection;
-	network: Network;
-	poolIdParam?: string;
-	lpAmountParam?: BN;
-	txTipConfig?: {
-		amount: BN;
-	};
+export interface HarvestLockLiquidityParams extends BaseCPMMParams {
+	nftMintParam?: PublicKey;
+	lpFeeAmountParam?: BN;
+	closeWsol?: boolean;
 }
 
-export const harvestLockLiquidity = async ({
-	umi,
-	connection,
-	network,
-	poolIdParam,
-	lpAmountParam,
-	txTipConfig,
-}: HarvestLockLiquidityParams) => {
-	const raydium = await initSdk(umi, connection, network, {
-		loadToken: true,
-	});
+export interface HarvestLockLiquidityResult extends CPMMTransactionResult {
+	nftMint: string;
+	lpFeeAmount: BN;
+}
 
-	const poolId = poolIdParam || "2umXxGh6jY63wDHHQ4yDv8BJbjzLNnKgYDwRqas75nnt";
+/**
+ * Harvest rewards from locked liquidity position
+ */
+export const harvestLockLiquidity = async (
+	params: HarvestLockLiquidityParams,
+): Promise<HarvestLockLiquidityResult> => {
+	const operation = "HARVEST_LOCK_LIQUIDITY";
 
-	let poolInfo: ApiV3PoolInfoStandardItemCpmm;
-	let poolKeys: CpmmKeys | undefined;
-	if (raydium.cluster === "mainnet") {
-		// note: api doesn't support get devnet pool info, so in devnet else we go rpc method
-		// if you wish to get pool info from rpc, also can modify logic to go rpc method directly
-		const data = await raydium.api.fetchPoolById({ ids: poolId });
-		poolInfo = data[0] as ApiV3PoolInfoStandardItemCpmm;
-		if (!isValidCpmm(poolInfo.programId))
-			throw new Error("target pool is not CPMM pool");
-	} else {
-		const data = await raydium.cpmm.getPoolInfoFromRpc(poolId);
-		poolInfo = data.poolInfo;
-		poolKeys = data.poolKeys;
-	}
+	try {
+		// Validate parameters
+		validateBaseCPMMParams(params, operation);
 
-	if (Network.MAINNET === network) {
-		const { execute } = await raydium.cpmm.harvestLockLp({
+		const {
+			poolIdParam,
+			nftMintParam,
+			lpFeeAmountParam,
+			closeWsol = false,
+		} = params;
+
+		// Initialize Raydium SDK
+		console.log("Initializing Raydium SDK for harvest lock liquidity...");
+		const raydium = await initializeRaydiumSDK(params, operation);
+
+		// Resolve pool ID and NFT mint
+		const poolId = poolIdParam || DEFAULT_POOL_IDS.SOL_USDC;
+		const nftMint =
+			nftMintParam ||
+			new PublicKey("CgkdQL6eRN1nxG2AmC8NFG5iboXuKtSjT4pShnspomZy");
+		const lpFeeAmount = lpFeeAmountParam || new BN(99999999);
+
+		console.log(`Harvesting lock liquidity from pool: ${poolId}`);
+
+		// Fetch pool information
+		const { poolInfo, poolKeys } = await getPoolData(
+			raydium,
+			poolId,
+			operation,
+		);
+
+		// Validate LP fee amount
+		if (lpFeeAmount.lte(new BN(0))) {
+			throw new CPMMOperationError(
+				"LP fee amount must be greater than zero",
+				"INVALID_LP_FEE_AMOUNT",
+				operation,
+			);
+		}
+
+		// Create transaction configuration
+		const txConfig = createTransactionConfig(params);
+
+		// Prepare harvest configuration based on network
+		let harvestConfig: any = {
 			poolInfo,
-			nftMint: new PublicKey("CgkdQL6eRN1nxG2AmC8NFG5iboXuKtSjT4pShnspomZy"), // locked nft mint
-			lpFeeAmount: lpAmountParam || new BN(99999999),
-			txVersion,
+			nftMint,
+			lpFeeAmount,
+			closeWsol,
+			...txConfig,
+		};
 
-			// closeWsol: false, // default if true, if you want use wsol, you need set false
+		// Add network-specific configuration
+		if (params.network !== Network.MAINNET) {
+			harvestConfig = {
+				...harvestConfig,
+				programId: DEV_LOCK_CPMM_PROGRAM,
+				authProgram: DEV_LOCK_CPMM_AUTH,
+				poolKeys,
+			};
+		}
 
-			// optional: add transfer sol to tip account instruction. e.g sent tip to jito
-			txTipConfig: {
-				address: new PublicKey("96gYZGLnJYVFmbjzopPSU6QiEV5fGqZNyN9nmNhvrZU5"),
-				amount: txTipConfig?.amount || new BN(10000000), // 0.01 sol
-			},
+		// Execute harvest lock liquidity
+		const { transaction } = await raydium.cpmm.harvestLockLp(harvestConfig);
+
+		// Execute transaction using Umi
+		const umiTx = fromWeb3JsTransaction(transaction);
+		const signedTx = await params.umi.identity.signTransaction(umiTx);
+		const resultTx = await params.umi.rpc.sendTransaction(signedTx);
+		const txId = resultTx.toString();
+
+		// Create standardized transaction result
+		const transactionResult = createTransactionResult(
+			txId,
+			poolId,
+			params.network,
+		);
+
+		console.log("Harvest lock liquidity completed successfully:", {
+			txId,
+			poolId,
+			nftMint: nftMint.toBase58(),
+			lpFeeAmount: lpFeeAmount.toString(),
+			explorerUrl: transactionResult.explorerUrl,
 		});
 
-		const { txId } = await execute({ sendAndConfirm: true });
-		console.log("lp locked", {
-			txId: `https://explorer.solana.com/tx/${txId}`,
-		});
-		return { txId };
+		return {
+			...transactionResult,
+			nftMint: nftMint.toBase58(),
+			lpFeeAmount,
+		};
+	} catch (error) {
+		if (error instanceof CPMMOperationError) {
+			throw error;
+		}
+
+		throw new CPMMOperationError(
+			`Failed to harvest lock liquidity: ${error instanceof Error ? error.message : String(error)}`,
+			"HARVEST_LOCK_LIQUIDITY_FAILED",
+			operation,
+			error,
+		);
 	}
-	// devnet
-	const { execute } = await raydium.cpmm.harvestLockLp({
-		programId: DEV_LOCK_CPMM_PROGRAM,
-		authProgram: DEV_LOCK_CPMM_AUTH,
-		poolKeys,
-		poolInfo,
-		nftMint: new PublicKey("CgkdQL6eRN1nxG2AmC8NFG5iboXuKtSjT4pShnspomZy"), // locked nft mint
-		lpFeeAmount: lpAmountParam || new BN(99999999),
-		txVersion,
-		closeWsol: false, // default if true, if you want use wsol, you need set false
-		txTipConfig: {
-			address: new PublicKey("96gYZGLnJYVFmbjzopPSU6QiEV5fGqZNyN9nmNhvrZU5"),
-			amount: txTipConfig?.amount || new BN(10000000), // 0.01 sol
-		},
-	});
-	const { txId } = await execute({ sendAndConfirm: true });
-	console.log("lp locked", {
-		txId: `https://explorer.solana.com/tx/${txId}?cluster=${raydium.cluster}`,
-	});
-	return { txId };
 };

@@ -51,12 +51,14 @@ export const initSdk = async (
 	 * note: after call raydium.account.updateTokenAccount, raydium will not automatically fetch token account
 	 */
 
-	/*  
-  raydium.account.updateTokenAccount(await fetchTokenAccountData())
-  connection.onAccountChange(owner.publicKey, async () => {
-    raydium!.account.updateTokenAccount(await fetchTokenAccountData())
-  })
-  */
+	raydium.account.updateTokenAccount(
+		await fetchTokenAccountData(appConnection, owner),
+	);
+	appConnection.onAccountChange(owner, async () => {
+		raydium!.account.updateTokenAccount(
+			await fetchTokenAccountData(appConnection, owner),
+		);
+	});
 
 	return raydium;
 };

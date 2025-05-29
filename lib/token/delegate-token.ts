@@ -3,6 +3,7 @@ import {
 	TokenStandard,
 	burnV1,
 	delegateStandardV1,
+	fetchAllDigitalAssetByOwner,
 	lockV1,
 	revokeStandardV1,
 	transferV1,
@@ -10,13 +11,13 @@ import {
 } from "@metaplex-foundation/mpl-token-metadata";
 import {
 	approveTokenDelegate,
+	fetchAllTokenByOwner,
 	findAssociatedTokenPda,
 	revokeTokenDelegate,
 	setComputeUnitPrice,
 } from "@metaplex-foundation/mpl-toolbox";
 import { TransactionBuilder, publicKey } from "@metaplex-foundation/umi";
 import { base58 } from "@metaplex-foundation/umi/serializers";
-import { Token } from "@raydium-io/raydium-sdk-v2";
 
 export interface DelegateTokenParams {
 	/** The mint address of the token to delegate */
@@ -81,12 +82,20 @@ export const delegateTokens = async (
 		let txBuilder: TransactionBuilder;
 		let rawAmount: bigint | undefined;
 
+		// Fetch mint info to get decimals
+		const { fetchMint } = await import("@metaplex-foundation/mpl-toolbox");
+		const mintInfo = await fetchMint(umi, mint);
+
+		// Convert human-readable amount to raw amount based on token decimals
+		rawAmount = BigInt(Math.round(amount * 10 ** mintInfo.decimals));
+
 		if (delegateType === "default") {
 			// Use Token Metadata delegation for NFTs or Token-2022 standards
 			txBuilder = delegateStandardV1(umi, {
 				mint,
 				tokenOwner: owner,
 				authority: signer,
+				amount: rawAmount,
 				delegate,
 				tokenStandard,
 			}).add(setComputeUnitPrice(umi, { microLamports: 2_500_000 }));
@@ -96,13 +105,6 @@ export const delegateTokens = async (
 				mint,
 				owner,
 			});
-
-			// Fetch mint info to get decimals
-			const { fetchMint } = await import("@metaplex-foundation/mpl-toolbox");
-			const mintInfo = await fetchMint(umi, mint);
-
-			// Convert human-readable amount to raw amount based on token decimals
-			rawAmount = BigInt(Math.round(amount * 10 ** mintInfo.decimals));
 
 			txBuilder = approveTokenDelegate(umi, {
 				source: tokenAccount,
@@ -215,6 +217,7 @@ export const delegatedTransfer = async (params: {
 	destinationOwnerAddress: string;
 	currentOwnerAddress?: string;
 	tokenStandard?: TokenStandard;
+	amount: number;
 }): Promise<{ signature: string }> => {
 	const {
 		mintAddress,
@@ -239,6 +242,16 @@ export const delegatedTransfer = async (params: {
 	try {
 		const mint = publicKey(mintAddress);
 		const destinationOwner = publicKey(destinationOwnerAddress);
+
+		// Fetch mint info to get decimals
+		const { fetchMint } = await import("@metaplex-foundation/mpl-toolbox");
+		const mintInfo = await fetchMint(umi, mint);
+
+		// Convert human-readable amount to raw amount based on token decimals
+		const rawAmount = BigInt(
+			Math.round(params.amount * 10 ** mintInfo.decimals),
+		);
+
 		const currentOwner = currentOwnerAddress
 			? publicKey(currentOwnerAddress)
 			: signer.publicKey;
@@ -247,6 +260,7 @@ export const delegatedTransfer = async (params: {
 			mint,
 			authority: signer, // The delegate authority
 			tokenOwner: currentOwner,
+			amount: rawAmount,
 			destinationOwner,
 			tokenStandard,
 		}).add(setComputeUnitPrice(umi, { microLamports: 2_500_000 }));
@@ -284,6 +298,7 @@ export const delegatedBurn = async (params: {
 	mintAddress: string;
 	tokenOwnerAddress?: string;
 	tokenStandard?: TokenStandard;
+	amount: number;
 }): Promise<{ signature: string }> => {
 	const {
 		mintAddress,
@@ -307,11 +322,20 @@ export const delegatedBurn = async (params: {
 			? publicKey(tokenOwnerAddress)
 			: signer.publicKey;
 
+		// Fetch mint info to get decimals
+		const { fetchMint } = await import("@metaplex-foundation/mpl-toolbox");
+		const mintInfo = await fetchMint(umi, mint);
+
+		const rawAmount = BigInt(
+			Math.round(params.amount * 10 ** mintInfo.decimals),
+		);
+
 		const txBuilder = burnV1(umi, {
 			mint,
 			authority: signer, // The delegate authority
 			tokenOwner,
 			tokenStandard,
+			amount: rawAmount,
 		}).add(setComputeUnitPrice(umi, { microLamports: 2_500_000 }));
 
 		const tx = await txBuilder.sendAndConfirm(umi, {
@@ -437,6 +461,430 @@ export const unlockAsset = async (params: {
 	}
 };
 
+export interface DelegateAllTokensParams {
+	/** The delegate's public key who will have spending authority */
+	delegateAddress: string;
+	/** The owner of the token accounts (optional, defaults to current wallet) */
+	ownerAddress?: string;
+	/** Delegate type for all tokens */
+	delegateType?: "spl" | "default";
+	/** Filter by token standard (optional, if not provided, delegates all) */
+	tokenStandard?: TokenStandard;
+	/** Include NFTs in delegation (default: true) */
+	includeNFTs?: boolean;
+	/** Include fungible tokens in delegation (default: true) */
+	includeFungible?: boolean;
+	/** Minimum token amount to delegate (for fungible tokens, default: 0) */
+	minAmount?: number;
+	/** Maximum number of tokens to process in one batch (default: 10) */
+	batchSize?: number;
+}
+
+/**
+ * Delegates spending authority for all token accounts owned by a wallet
+ * @param params - The parameters for delegating all tokens
+ * @returns A promise that resolves to an array of delegation results
+ */
+export const delegateAllTokens = async (
+	params: DelegateAllTokensParams,
+): Promise<{
+	successful: Array<{
+		mintAddress: string;
+		signature: string;
+		amountDelegated?: bigint;
+	}>;
+	failed: Array<{ mintAddress: string; error: string }>;
+	summary: {
+		total: number;
+		successful: number;
+		failed: number;
+	};
+}> => {
+	const {
+		delegateAddress,
+		ownerAddress,
+		delegateType = "default",
+		tokenStandard,
+		includeNFTs = false,
+		includeFungible = true,
+		minAmount = 0,
+		batchSize = 10,
+	} = params;
+
+	const { umi, signer } = useUmiStore.getState();
+
+	if (!signer) {
+		throw new Error("No wallet connected. Please connect your wallet first.");
+	}
+
+	if (!delegateAddress) {
+		throw new Error("Delegate address is required.");
+	}
+
+	const owner = ownerAddress ? publicKey(ownerAddress) : signer.publicKey;
+	const successful: Array<{
+		mintAddress: string;
+		signature: string;
+		amountDelegated?: bigint;
+	}> = [];
+	const failed: Array<{ mintAddress: string; error: string }> = [];
+
+	try {
+		console.log("Fetching all token accounts...");
+
+		// Fetch all digital assets (NFTs and Token Metadata standard tokens)
+		let digitalAssets: any[] = [];
+		if (
+			includeNFTs ||
+			(tokenStandard &&
+				[
+					TokenStandard.NonFungibleEdition,
+					TokenStandard.ProgrammableNonFungible,
+					TokenStandard.ProgrammableNonFungibleEdition,
+				].includes(tokenStandard))
+		) {
+			try {
+				digitalAssets = await fetchAllDigitalAssetByOwner(umi, owner);
+				console.log(`Found ${digitalAssets.length} digital assets`);
+			} catch (error) {
+				console.warn("Failed to fetch digital assets:", error);
+			}
+		}
+
+		// Fetch all SPL token accounts
+		let tokenAccounts: any[] = [];
+		if (
+			includeFungible ||
+			(tokenStandard && tokenStandard === TokenStandard.Fungible)
+		) {
+			try {
+				tokenAccounts = await fetchAllTokenByOwner(umi, owner);
+				console.log(`Found ${tokenAccounts.length} token accounts`);
+			} catch (error) {
+				console.warn("Failed to fetch token accounts:", error);
+			}
+		}
+
+		// Process digital assets (NFTs)
+		for (const asset of digitalAssets) {
+			if (
+				!includeNFTs &&
+				asset.metadata.tokenStandard === TokenStandard.NonFungible
+			) {
+				continue;
+			}
+
+			// Filter by token standard if specified
+			if (tokenStandard && asset.metadata.tokenStandard !== tokenStandard) {
+				continue;
+			}
+
+			try {
+				const result = await delegateTokens({
+					mintAddress: asset.publicKey.toString(),
+					delegateAddress,
+					amount: 1, // For NFTs, amount is always 1
+					ownerAddress: owner.toString(),
+					delegateType,
+					tokenStandard: asset.metadata.tokenStandard,
+				});
+
+				successful.push({
+					mintAddress: asset.publicKey.toString(),
+					signature: result.signature,
+					amountDelegated: result.amountDelegated,
+				});
+
+				console.log(`✅ Delegated NFT: ${asset.publicKey.toString()}`);
+			} catch (error) {
+				const errorMessage =
+					error instanceof Error ? error.message : String(error);
+				failed.push({
+					mintAddress: asset.publicKey.toString(),
+					error: errorMessage,
+				});
+				console.error(
+					`❌ Failed to delegate NFT ${asset.publicKey.toString()}:`,
+					errorMessage,
+				);
+			}
+
+			// Add delay between operations to avoid rate limiting
+			await new Promise((resolve) => setTimeout(resolve, 100));
+		}
+
+		// Process SPL token accounts (Fungible tokens)
+		for (const tokenAccount of tokenAccounts) {
+			if (!includeFungible) {
+				continue;
+			}
+
+			// Skip if no balance or below minimum amount
+			const balance =
+				Number(tokenAccount.amount) / 10 ** tokenAccount.mint.decimals;
+			if (balance < minAmount) {
+				continue;
+			}
+
+			try {
+				const result = await delegateTokens({
+					mintAddress: tokenAccount.mint.publicKey.toString(),
+					delegateAddress,
+					amount: balance, // Delegate the full balance
+					ownerAddress: owner.toString(),
+					delegateType: delegateType === "default" ? "spl" : delegateType,
+					tokenStandard: TokenStandard.Fungible,
+				});
+
+				successful.push({
+					mintAddress: tokenAccount.mint.publicKey.toString(),
+					signature: result.signature,
+					amountDelegated: result.amountDelegated,
+				});
+
+				console.log(
+					`✅ Delegated ${balance} tokens: ${tokenAccount.mint.publicKey.toString()}`,
+				);
+			} catch (error) {
+				const errorMessage =
+					error instanceof Error ? error.message : String(error);
+				failed.push({
+					mintAddress: tokenAccount.mint.publicKey.toString(),
+					error: errorMessage,
+				});
+				console.error(
+					`❌ Failed to delegate token ${tokenAccount.mint.publicKey.toString()}:`,
+					errorMessage,
+				);
+			}
+
+			// Add delay between operations to avoid rate limiting
+			await new Promise((resolve) => setTimeout(resolve, 100));
+		}
+
+		const summary = {
+			total: digitalAssets.length + tokenAccounts.length,
+			successful: successful.length,
+			failed: failed.length,
+		};
+
+		console.log("\n=== Delegation Summary ===");
+		console.log(`Total tokens processed: ${summary.total}`);
+		console.log(`Successful delegations: ${summary.successful}`);
+		console.log(`Failed delegations: ${summary.failed}`);
+
+		if (failed.length > 0) {
+			console.log("\nFailed delegations:");
+			for (const { mintAddress, error } of failed) {
+				console.log(`- ${mintAddress}: ${error}`);
+			}
+		}
+
+		return { successful, failed, summary };
+	} catch (error: unknown) {
+		console.error("Delegate all tokens failed:", error);
+		const message = error instanceof Error ? error.message : String(error);
+		throw new Error(`Delegate all tokens failed: ${message}`);
+	}
+};
+
+/**
+ * Batch delegate tokens with transaction bundling for better efficiency
+ * @param params - The parameters for batch delegating tokens
+ * @returns A promise that resolves to batch delegation results
+ */
+export const batchDelegateTokens = async (
+	params: DelegateAllTokensParams & {
+		/** Array of specific mint addresses to delegate (optional) */
+		mintAddresses?: string[];
+	},
+): Promise<{
+	successful: Array<{ signature: string; mintAddresses: string[] }>;
+	failed: Array<{ mintAddress: string; error: string }>;
+	summary: {
+		total: number;
+		successful: number;
+		failed: number;
+	};
+}> => {
+	const {
+		delegateAddress,
+		ownerAddress,
+		delegateType = "default",
+		batchSize = 5,
+		mintAddresses,
+	} = params;
+
+	const { umi, signer } = useUmiStore.getState();
+
+	if (!signer) {
+		throw new Error("No wallet connected. Please connect your wallet first.");
+	}
+
+	const owner = ownerAddress ? publicKey(ownerAddress) : signer.publicKey;
+	const delegate = publicKey(delegateAddress);
+	const successful: Array<{ signature: string; mintAddresses: string[] }> = [];
+	const failed: Array<{ mintAddress: string; error: string }> = [];
+
+	try {
+		let tokensToProcess: string[] = [];
+
+		if (mintAddresses) {
+			tokensToProcess = mintAddresses;
+		} else {
+			// Fetch all token accounts if no specific mints provided
+			const tokenAccounts = await fetchAllTokenByOwner(umi, owner);
+			tokensToProcess = tokenAccounts.map((account) => account.mint.toString());
+		}
+
+		// Process tokens in batches
+		for (let i = 0; i < tokensToProcess.length; i += batchSize) {
+			const batch = tokensToProcess.slice(i, i + batchSize);
+
+			try {
+				const txBuilder = new TransactionBuilder();
+
+				for (const mintAddress of batch) {
+					const mint = publicKey(mintAddress);
+
+					if (delegateType === "default") {
+						txBuilder.add(
+							delegateStandardV1(umi, {
+								mint,
+								tokenOwner: owner,
+								authority: signer,
+								delegate,
+								tokenStandard: TokenStandard.Fungible,
+							}),
+						);
+					} else {
+						const tokenAccount = findAssociatedTokenPda(umi, {
+							mint,
+							owner,
+						});
+
+						// For SPL tokens, we need to approve the full balance
+						const { fetchMint } = await import(
+							"@metaplex-foundation/mpl-toolbox"
+						);
+						const mintInfo = await fetchMint(umi, mint);
+						const maxAmount = BigInt(2 ** 64 - 1); // Max u64 value
+
+						txBuilder.add(
+							approveTokenDelegate(umi, {
+								source: tokenAccount,
+								delegate,
+								amount: maxAmount,
+								owner: signer,
+							}),
+						);
+					}
+				}
+
+				txBuilder.add(setComputeUnitPrice(umi, { microLamports: 2_500_000 }));
+
+				const tx = await txBuilder.sendAndConfirm(umi, {
+					confirm: { commitment: "finalized" },
+				});
+
+				const signature = base58.deserialize(tx.signature)[0];
+				successful.push({ signature, mintAddresses: batch });
+
+				console.log(
+					`✅ Batch delegated ${batch.length} tokens. Signature: ${signature}`,
+				);
+			} catch (error) {
+				// If batch fails, try individual delegations
+				for (const mintAddress of batch) {
+					try {
+						const result = await delegateTokens({
+							mintAddress,
+							delegateAddress,
+							amount: 1,
+							ownerAddress: owner.toString(),
+							delegateType,
+						});
+						successful.push({
+							signature: result.signature,
+							mintAddresses: [mintAddress],
+						});
+					} catch (individualError) {
+						const errorMessage =
+							individualError instanceof Error
+								? individualError.message
+								: String(individualError);
+						failed.push({ mintAddress, error: errorMessage });
+					}
+				}
+			}
+
+			// Add delay between batches
+			await new Promise((resolve) => setTimeout(resolve, 200));
+		}
+
+		const summary = {
+			total: tokensToProcess.length,
+			successful: successful.reduce(
+				(acc, curr) => acc + curr.mintAddresses.length,
+				0,
+			),
+			failed: failed.length,
+		};
+
+		console.log("\n=== Batch Delegation Summary ===");
+		console.log(`Total tokens processed: ${summary.total}`);
+		console.log(`Successful delegations: ${summary.successful}`);
+		console.log(`Failed delegations: ${summary.failed}`);
+
+		return { successful, failed, summary };
+	} catch (error: unknown) {
+		console.error("Batch delegate tokens failed:", error);
+		const message = error instanceof Error ? error.message : String(error);
+		throw new Error(`Batch delegate tokens failed: ${message}`);
+	}
+};
+
+/**
+ * Example usage for delegating all tokens
+ */
+export const exampleDelegateAllTokens = async () => {
+	const delegateAddress = "Delegate_Public_Key";
+
+	try {
+		// Option 1: Delegate all tokens (NFTs and fungible)
+		const allResult = await delegateAllTokens({
+			delegateAddress,
+			includeNFTs: true,
+			includeFungible: true,
+			minAmount: 0.001, // Only delegate fungible tokens with at least 0.001 balance
+		});
+
+		console.log("All tokens delegation result:", allResult.summary);
+
+		// Option 2: Delegate only NFTs
+		const nftResult = await delegateAllTokens({
+			delegateAddress,
+			includeNFTs: true,
+			includeFungible: false,
+			tokenStandard: TokenStandard.NonFungible,
+		});
+
+		console.log("NFT delegation result:", nftResult.summary);
+
+		// Option 3: Batch delegate specific tokens
+		const specificMints = ["mint1...", "mint2...", "mint3..."];
+		const batchResult = await batchDelegateTokens({
+			delegateAddress,
+			mintAddresses: specificMints,
+			batchSize: 3,
+		});
+
+		console.log("Batch delegation result:", batchResult.summary);
+	} catch (error) {
+		console.error("Delegate all tokens failed:", error);
+	}
+};
+
 /**
  * Updated example usage showing the complete Standard Delegate lifecycle
  */
@@ -474,6 +922,7 @@ export const exampleStandardDelegateUsage = async () => {
 			mintAddress,
 			destinationOwnerAddress: newOwnerAddress,
 			tokenStandard: TokenStandard.NonFungible,
+			amount: 1,
 		});
 		console.log("Delegated transfer successful:", transferResult.signature);
 

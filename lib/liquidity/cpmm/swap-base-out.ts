@@ -1,135 +1,197 @@
-import type { Network } from "@/store/useUmiStore";
-import type { Umi } from "@metaplex-foundation/umi";
+import { fromWeb3JsTransaction } from "@metaplex-foundation/umi-web3js-adapters";
+import { base58 } from "@metaplex-foundation/umi/serializers";
 import {
-	type ApiV3PoolInfoStandardItemCpmm,
-	type CpmmKeys,
 	type CpmmRpcData,
 	CurveCalculator,
 	USDCMint,
 } from "@raydium-io/raydium-sdk-v2";
-import { NATIVE_MINT } from "@solana/spl-token";
-import { type Connection, PublicKey } from "@solana/web3.js";
+import type { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
-import { initSdk, txVersion } from "../index";
-import { isValidCpmm } from "./utils";
+import {
+	type BaseCPMMParams,
+	CPMMOperationError,
+	type CPMMTransactionResult,
+	DEFAULT_POOL_IDS,
+	createTransactionConfig,
+	createTransactionResult,
+	getPoolData,
+	initializeRaydiumSDK,
+	validateBaseCPMMParams,
+} from "./base";
 
-export interface SwapBaseOutParams {
-	umi: Umi;
-	connection: Connection;
-	network: Network;
-	poolIdParam?: string;
+export interface SwapBaseOutParams extends BaseCPMMParams {
 	outputAmountParam?: BN;
 	outputMintParam?: PublicKey;
 	slippageParam?: number;
 	baseInParam?: boolean;
-	txTipConfig?: {
-		amount: BN;
-	};
 }
-// swapBaseOut means fixed output token amount, calculate needed input token amount
-export const swapBaseOut = async ({
-	umi,
-	connection,
-	network,
-	poolIdParam,
-	outputAmountParam,
-	outputMintParam,
-	slippageParam,
-	baseInParam,
-	txTipConfig,
-}: SwapBaseOutParams) => {
-	const raydium = await initSdk(umi, connection, network, {
-		loadToken: true,
-	});
 
-	// SOL - USDC pool
-	const poolId = poolIdParam || "7JuwJuNU88gurFnyWeiyGKbFmExMWcmRZntn9imEzdny";
+export interface SwapBaseOutResult extends CPMMTransactionResult {
+	inputAmount: BN;
+	outputAmount: BN;
+	inputMint: string;
+	outputMint: string;
+	tradeFee: BN;
+	slippage: number;
+}
 
-	// means want to buy 1 USDC
-	const outputAmount = outputAmountParam || new BN(1000000);
-	const outputMint = outputMintParam || USDCMint;
+/**
+ * Swap with fixed output amount - calculates required input amount
+ */
+export const swapBaseOut = async (
+	params: SwapBaseOutParams,
+): Promise<SwapBaseOutResult> => {
+	const operation = "SWAP_BASE_OUT";
 
-	let poolInfo: ApiV3PoolInfoStandardItemCpmm;
-	let poolKeys: CpmmKeys | undefined;
-	let rpcData: CpmmRpcData;
+	try {
+		// Validate parameters
+		validateBaseCPMMParams(params, operation);
 
-	if (raydium.cluster === "mainnet") {
-		// note: api doesn't support get devnet pool info, so in devnet else we go rpc method
-		// if you wish to get pool info from rpc, also can modify logic to go rpc method directly
-		const data = await raydium.api.fetchPoolById({ ids: poolId });
-		poolInfo = data[0] as ApiV3PoolInfoStandardItemCpmm;
-		if (!isValidCpmm(poolInfo.programId))
-			throw new Error("target pool is not CPMM pool");
-		rpcData = await raydium.cpmm.getRpcPoolInfo(poolInfo.id, true);
-	} else {
-		const data = await raydium.cpmm.getPoolInfoFromRpc(poolId);
-		poolInfo = data.poolInfo;
-		poolKeys = data.poolKeys;
-		rpcData = data.rpcData;
+		const {
+			poolIdParam,
+			outputAmountParam,
+			outputMintParam,
+			slippageParam = 0.001, // 0.1% default
+			baseInParam,
+		} = params;
+
+		// Initialize Raydium SDK
+		console.log("Initializing Raydium SDK for swap base out...");
+		const raydium = await initializeRaydiumSDK(params, operation);
+
+		// Resolve pool ID and output parameters
+		const poolId = poolIdParam || DEFAULT_POOL_IDS.SOL_USDC;
+		const outputAmount = outputAmountParam || new BN(1000000); // 1 USDC default
+		const outputMint = outputMintParam || USDCMint;
+
+		console.log(`Swapping for fixed output in pool: ${poolId}`);
+
+		// Fetch pool information with RPC data for calculations
+		const { poolInfo, poolKeys, rpcData } = await getPoolData(
+			raydium,
+			poolId,
+			operation,
+			true, // Include RPC data for swap calculations
+		);
+
+		if (!rpcData) {
+			throw new CPMMOperationError(
+				"RPC data is required for swap calculations",
+				"MISSING_RPC_DATA",
+				operation,
+			);
+		}
+
+		// Validate output mint belongs to the pool
+		if (
+			outputMint.toBase58() !== poolInfo.mintA.address &&
+			outputMint.toBase58() !== poolInfo.mintB.address
+		) {
+			throw new CPMMOperationError(
+				`Output mint ${outputMint.toBase58()} does not match pool tokens`,
+				"INVALID_OUTPUT_MINT",
+				operation,
+			);
+		}
+
+		// Determine if output is base token (mintA) or quote token (mintB)
+		// If output is mintB, then we're buying mintB with mintA (baseIn = true)
+		const baseIn =
+			baseInParam ?? outputMint.toBase58() === poolInfo.mintB.address;
+
+		// Validate RPC data completeness
+		if (!rpcData.configInfo?.tradeFeeRate) {
+			throw new CPMMOperationError(
+				"Trade fee rate not available from RPC data",
+				"MISSING_TRADE_FEE_RATE",
+				operation,
+			);
+		}
+
+		// Calculate required input amount for fixed output using CPMM curve
+		const swapResult = CurveCalculator.swapBaseOut({
+			poolMintA: poolInfo.mintA,
+			poolMintB: poolInfo.mintB,
+			tradeFeeRate: rpcData.configInfo.tradeFeeRate,
+			baseReserve: rpcData.baseReserve,
+			quoteReserve: rpcData.quoteReserve,
+			outputMint,
+			outputAmount,
+		});
+
+		// Validate slippage
+		if (slippageParam < 0.0001 || slippageParam > 1) {
+			throw new CPMMOperationError(
+				"Slippage must be between 0.01% (0.0001) and 100% (1)",
+				"INVALID_SLIPPAGE_RANGE",
+				operation,
+			);
+		}
+
+		// Create transaction configuration
+		const txConfig = createTransactionConfig(params);
+
+		// Execute swap with fixed output
+		const { transaction } = await raydium.cpmm.swap({
+			poolInfo,
+			poolKeys,
+			inputAmount: new BN(0), // Not used when fixedOut is true
+			fixedOut: true,
+			swapResult: {
+				sourceAmountSwapped: swapResult.amountIn,
+				destinationAmountSwapped: outputAmount,
+				tradeFee: swapResult.tradeFee,
+			},
+			slippage: slippageParam,
+			baseIn,
+			...txConfig,
+		});
+
+		// Execute transaction using Umi
+		const umiTx = fromWeb3JsTransaction(transaction);
+		const signedTx = await params.umi.identity.signTransaction(umiTx);
+		const resultTx = await params.umi.rpc.sendTransaction(signedTx);
+		const txId = base58.deserialize(resultTx)[0];
+
+		// Create standardized transaction result
+		const transactionResult = createTransactionResult(
+			txId,
+			poolId,
+			params.network,
+		);
+
+		// Determine input mint (opposite of output mint)
+		const inputMint = baseIn ? poolInfo.mintA.address : poolInfo.mintB.address;
+
+		console.log(
+			`Swap base out completed: ${inputMint} → ${outputMint.toBase58()}`,
+			{
+				txId,
+				inputAmount: swapResult.amountIn.toString(),
+				outputAmount: outputAmount.toString(),
+				explorerUrl: transactionResult.explorerUrl,
+			},
+		);
+
+		return {
+			...transactionResult,
+			inputAmount: swapResult.amountIn,
+			outputAmount,
+			inputMint,
+			outputMint: outputMint.toBase58(),
+			tradeFee: swapResult.tradeFee,
+			slippage: slippageParam,
+		};
+	} catch (error) {
+		if (error instanceof CPMMOperationError) {
+			throw error;
+		}
+
+		throw new CPMMOperationError(
+			`Swap base out failed: ${error instanceof Error ? error.message : String(error)}`,
+			"SWAP_BASE_OUT_FAILED",
+			operation,
+			error,
+		);
 	}
-
-	if (
-		outputMint.toBase58() !== poolInfo.mintA.address &&
-		outputMint.toBase58() !== poolInfo.mintB.address
-	)
-		throw new Error("input mint does not match pool");
-
-	const baseIn = outputMint.toBase58() === poolInfo.mintB.address;
-
-	// swap pool mintA for mintB
-	const swapResult = CurveCalculator.swapBaseOut({
-		poolMintA: poolInfo.mintA,
-		poolMintB: poolInfo.mintB,
-		tradeFeeRate: rpcData.configInfo!.tradeFeeRate,
-		baseReserve: rpcData.baseReserve,
-		quoteReserve: rpcData.quoteReserve,
-		outputMint,
-		outputAmount,
-	});
-
-	/**
-	 * swapResult.sourceAmountSwapped -> input amount
-	 * swapResult.destinationAmountSwapped -> output amount
-	 * swapResult.tradeFee -> this swap fee, charge input mint
-	 */
-
-	const { execute, transaction } = await raydium.cpmm.swap({
-		poolInfo,
-		poolKeys,
-		inputAmount: new BN(0), // if set fixedOut to true, this arguments won't be used
-		fixedOut: true,
-		swapResult: {
-			sourceAmountSwapped: swapResult.amountIn,
-			destinationAmountSwapped: outputAmount,
-		},
-		slippage: slippageParam || 0.001, // range: 1 ~ 0.0001, means 100% ~ 0.01%
-		baseIn: baseInParam || baseIn,
-		txVersion,
-
-		computeBudgetConfig: {
-			units: 600000,
-			microLamports: 465915,
-		},
-
-		// optional: add transfer sol to tip account instruction. e.g sent tip to jito
-		txTipConfig: {
-			address: new PublicKey("96gYZGLnJYVFmbjzopPSU6QiEV5fGqZNyN9nmNhvrZU5"),
-			amount: txTipConfig?.amount || new BN(10000000), // 0.01 sol
-		},
-	});
-	// don't want to wait confirm, set sendAndConfirm to false or don't pass any params to execute
-	const { txId } = await execute({ sendAndConfirm: true });
-	console.log(
-		`swapped: ${poolInfo.mintA.symbol} to ${poolInfo.mintB.symbol}:`,
-		{
-			txId: `https://explorer.solana.com/tx/${txId}`,
-		},
-	);
-	return {
-		txId,
-		transaction,
-	};
 };
-
-/** uncomment code below to execute */
-// swapBaseOut()
