@@ -28,6 +28,11 @@ const removeLiquiditySchema = z.object({
   slippagePercent: z.number().min(0.01).max(100, "Slippage must be between 0.01% and 100%"),
   closeWsol: z.boolean(),
   removePercentage: z.number().min(1).max(100),
+}).refine((data) => {
+  return data.poolId && data.poolId.length > 0;
+}, {
+  message: "Pool ID is required",
+  path: ["poolId"],
 });
 
 type RemoveLiquidityFormData = z.infer<typeof removeLiquiditySchema>;
@@ -144,8 +149,8 @@ const RemoveLiquidity = () => {
       }
 
       const percentage = watchedValues.removePercentage / 100;
-      const tokenAAmount = (parseFloat(selectedPosition.tokenA.amount) * percentage).toFixed(6);
-      const tokenBAmount = (parseFloat(selectedPosition.tokenB.amount) * percentage).toFixed(6);
+      const tokenAAmount = (Number.parseFloat(selectedPosition.tokenA.amount) * percentage).toFixed(6);
+      const tokenBAmount = (Number.parseFloat(selectedPosition.tokenB.amount) * percentage).toFixed(6);
 
       setEstimatedWithdrawal({
         tokenA: tokenAAmount,
@@ -399,16 +404,51 @@ const RemoveLiquidity = () => {
               Remove Liquidity from Pool
             </CardTitle>
             <CardDescription>
-              Select your LP position and amount to withdraw
+              Select your LP position or enter a pool ID manually
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-                {/* LP Position Selection */}
+                {/* Pool Selection Method */}
                 <div className="space-y-4">
                   <div className="flex items-center gap-4">
-                    <Badge variant="outline">LP Position</Badge>
+                    <Badge variant="outline">Pool Selection</Badge>
+                  </div>
+
+                  {/* Manual Pool ID Input */}
+                  <FormField
+                    control={form.control}
+                    name="poolId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Pool ID (Manual Entry)</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Enter pool ID to remove liquidity from..."
+                            {...field}
+                            onChange={(e) => {
+                              field.onChange(e.target.value);
+                              // Clear selected position when manually entering pool ID
+                              setSelectedPosition(null);
+                            }}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Enter a specific pool ID to remove liquidity from
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-background px-2 text-muted-foreground">Or select from your positions</span>
+                    </div>
                   </div>
 
                   <LPPositionSelector />
@@ -436,52 +476,11 @@ const RemoveLiquidity = () => {
                 <Separator />
 
                 {/* Removal Amount */}
-                {selectedPosition && (
+                {(selectedPosition || watchedValues.poolId) && (
                   <div className="space-y-4">
                     <div className="flex items-center gap-4">
                       <Badge variant="outline">Removal Amount</Badge>
                     </div>
-
-                    {/* Percentage Slider */}
-                    <FormField
-                      control={form.control}
-                      name="removePercentage"
-                      render={({ field }) => (
-                        <FormItem>
-                          <div className="flex items-center justify-between">
-                            <FormLabel>Percentage to Remove</FormLabel>
-                            <span className="text-sm font-mono">{field.value}%</span>
-                          </div>
-                          <FormControl>
-                            <div className="space-y-4">
-                              <Slider
-                                value={[field.value]}
-                                onValueChange={(value) => field.onChange(value[0])}
-                                min={1}
-                                max={100}
-                                step={1}
-                                className="w-full"
-                              />
-                              <div className="flex justify-between gap-2">
-                                {[25, 50, 75, 100].map((percentage) => (
-                                  <Button
-                                    key={percentage}
-                                    type="button"
-                                    variant={field.value === percentage ? "default" : "outline"}
-                                    size="sm"
-                                    onClick={() => setPercentage(percentage)}
-                                    className="flex-1"
-                                  >
-                                    {percentage}%
-                                  </Button>
-                                ))}
-                              </div>
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
 
                     {/* LP Amount Input */}
                     <FormField
@@ -507,8 +506,51 @@ const RemoveLiquidity = () => {
                       )}
                     />
 
+                    {/* Percentage Slider - Only show if position is selected */}
+                    {selectedPosition && (
+                      <FormField
+                        control={form.control}
+                        name="removePercentage"
+                        render={({ field }) => (
+                          <FormItem>
+                            <div className="flex items-center justify-between">
+                              <FormLabel>Percentage to Remove</FormLabel>
+                              <span className="text-sm font-mono">{field.value}%</span>
+                            </div>
+                            <FormControl>
+                              <div className="space-y-4">
+                                <Slider
+                                  value={[field.value]}
+                                  onValueChange={(value) => field.onChange(value[0])}
+                                  min={1}
+                                  max={100}
+                                  step={1}
+                                  className="w-full"
+                                />
+                                <div className="flex justify-between gap-2">
+                                  {[25, 50, 75, 100].map((percentage) => (
+                                    <Button
+                                      key={percentage}
+                                      type="button"
+                                      variant={field.value === percentage ? "default" : "outline"}
+                                      size="sm"
+                                      onClick={() => setPercentage(percentage)}
+                                      className="flex-1"
+                                    >
+                                      {percentage}%
+                                    </Button>
+                                  ))}
+                                </div>
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
+
                     {/* Estimated Withdrawal */}
-                    {estimatedWithdrawal && (
+                    {estimatedWithdrawal && selectedPosition && (
                       <div className="p-4 bg-muted/50 rounded-lg">
                         <div className="flex items-center gap-2 mb-2">
                           <ArrowDown className="w-4 h-4" />
@@ -582,7 +624,7 @@ const RemoveLiquidity = () => {
                 <Button
                   type="submit"
                   className="w-full"
-                  disabled={isSubmitting || !umi?.identity || !selectedPosition}
+                  disabled={isSubmitting || !umi?.identity || (!selectedPosition && !watchedValues.poolId)}
                   variant="destructive"
                 >
                   {isSubmitting ? (
@@ -617,7 +659,7 @@ const RemoveLiquidity = () => {
           <Alert className="max-w-2xl mx-auto mt-6">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              No LP positions found in your wallet. Add liquidity to pools first to be able to remove it.
+              No LP positions found in your wallet. You can still remove liquidity by entering a pool ID manually above.
             </AlertDescription>
           </Alert>
         )}
