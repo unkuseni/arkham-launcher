@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { type SwapParams, type SwapResult, swap } from "@/lib/liquidity/cpmm/swap";
-import { type SwapBaseOutParams, type SwapBaseOutResult, swapBaseOut } from "@/lib/liquidity/cpmm/swap-base-out";
+import { type SwapBaseOutParams, swapBaseOut } from "@/lib/liquidity/cpmm/swap-base-out";
 import useUmiStore, { ConnectionStatus } from "@/store/useUmiStore";
 import { Network } from "@/store/useUmiStore";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -313,7 +313,7 @@ const SwapToken = () => {
 
     setIsSubmitting(true);
     try {
-      let swapResult: SwapResult | SwapBaseOutResult;
+      let swapResult: SwapResult;
 
       if (activeTab === "exact_in") {
         // Exact input swap logic...
