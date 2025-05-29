@@ -5,7 +5,6 @@ import {
 } from "@metaplex-foundation/mpl-toolbox";
 import {
 	type Signer,
-	TransactionBuilder,
 	type Umi,
 	publicKey,
 	signerIdentity,
@@ -13,6 +12,7 @@ import {
 	transactionBuilder,
 } from "@metaplex-foundation/umi";
 import { fromWeb3JsTransaction } from "@metaplex-foundation/umi-web3js-adapters";
+import { base58 } from "@metaplex-foundation/umi/serializers";
 import {
 	type ApiCpmmConfigInfo,
 	DEVNET_PROGRAM_ID,
@@ -315,7 +315,7 @@ export const createCPMMPool = async (
 		const umiTx = fromWeb3JsTransaction(transaction);
 		const signedTx = await umiWithSigner.identity.signTransaction(umiTx);
 		const resultTx = await umiWithSigner.rpc.sendTransaction(signedTx);
-		const txId = resultTx.toString();
+		const txId = base58.deserialize(resultTx)[0];
 
 		// Transform pool keys for easier consumption
 		const poolKeys = Object.keys(extInfo.address).reduce(

@@ -1,4 +1,5 @@
 import { fromWeb3JsTransaction } from "@metaplex-foundation/umi-web3js-adapters";
+import { base58 } from "@metaplex-foundation/umi/serializers";
 import BN from "bn.js";
 import {
 	type BaseCPMMParams,
@@ -85,7 +86,7 @@ export const removeFromCPMMPool = async (
 		const umiTx = fromWeb3JsTransaction(transaction);
 		const signedTx = await params.umi.identity.signTransaction(umiTx);
 		const resultTx = await params.umi.rpc.sendTransaction(signedTx);
-		const txId = resultTx.toString();
+		const txId = base58.deserialize(resultTx)[0];
 		const transactionResult = createTransactionResult(
 			txId,
 			poolId,
