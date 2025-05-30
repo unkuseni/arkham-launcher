@@ -11,15 +11,15 @@ import { Lock, Snowflake, Sun } from "lucide-react";
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Badge } from "../ui/badge";
-import { Button } from "../ui/button";
+import { Badge } from "../../ui/badge";
+import { Button } from "../../ui/button";
 import {
 	Card,
 	CardContent,
 	CardDescription,
 	CardHeader,
 	CardTitle,
-} from "../ui/card";
+} from "../../ui/card";
 import {
 	Dialog,
 	DialogContent,
@@ -27,7 +27,7 @@ import {
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
-} from "../ui/dialog";
+} from "../../ui/dialog";
 import {
 	Form,
 	FormControl,
@@ -35,9 +35,9 @@ import {
 	FormItem,
 	FormLabel,
 	FormMessage,
-} from "../ui/form";
-import { Input } from "../ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
+} from "../../ui/form";
+import { Input } from "../../ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../ui/tabs";
 
 // Zod schema for freeze/thaw forms
 const freezeThawSchema = z.object({

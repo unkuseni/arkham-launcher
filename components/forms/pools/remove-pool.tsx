@@ -51,7 +51,7 @@ import {
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Label } from "../ui/label";
+import { Label } from "../../ui/label";
 
 // Form schema
 const removeLiquiditySchema = z

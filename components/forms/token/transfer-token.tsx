@@ -22,16 +22,16 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { z } from "zod";
-import { Badge } from "../ui/badge";
-import { Button } from "../ui/button";
+import { Badge } from "../../ui/badge";
+import { Button } from "../../ui/button";
 import {
 	Card,
 	CardContent,
 	CardDescription,
 	CardHeader,
 	CardTitle,
-} from "../ui/card";
-import { Checkbox } from "../ui/checkbox";
+} from "../../ui/card";
+import { Checkbox } from "../../ui/checkbox";
 import {
 	Form,
 	FormControl,
@@ -39,9 +39,9 @@ import {
 	FormItem,
 	FormLabel,
 	FormMessage,
-} from "../ui/form";
-import { Input } from "../ui/input";
-import { Label } from "../ui/label";
+} from "../../ui/form";
+import { Input } from "../../ui/input";
+import { Label } from "../../ui/label";
 import {
 	Select,
 	SelectContent,
@@ -49,15 +49,15 @@ import {
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "../ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
-import { Textarea } from "../ui/textarea";
+} from "../../ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../ui/tabs";
+import { Textarea } from "../../ui/textarea";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
-} from "../ui/tooltip";
+} from "../../ui/tooltip";
 
 const SOL_MINT_ADDRESS = "So11111111111111111111111111111111111111112"; // Wrapped SOL mint
 const NATIVE_SOL_ADDRESS = "11111111111111111111111111111111";
@@ -381,11 +381,10 @@ const EnhancedTransferComponent = () => {
 						].map((mode) => (
 							<Card
 								key={mode.id}
-								className={`cursor-pointer transition-all duration-200 hover:shadow-md ${
-									transferMode === mode.id
+								className={`cursor-pointer transition-all duration-200 hover:shadow-md ${transferMode === mode.id
 										? "ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-950/20"
 										: ""
-								}`}
+									}`}
 								onClick={() => setTransferMode(mode.id as TransferMode)}
 							>
 								<CardContent className="p-4">
@@ -438,11 +437,10 @@ const EnhancedTransferComponent = () => {
 							{results.map((result, index) => (
 								<div
 									key={`${result.timestamp.getTime()}-${index}`}
-									className={`p-3 rounded-lg border ${
-										result.success
+									className={`p-3 rounded-lg border ${result.success
 											? "border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-900/20"
 											: "border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-900/20"
-									}`}
+										}`}
 								>
 									<div className="flex items-center justify-between">
 										<div className="flex items-center gap-2">
@@ -1166,13 +1164,12 @@ const Alert = ({
 	variant?: "default" | "destructive" | "success";
 }) => (
 	<div
-		className={`rounded-lg border p-4 ${
-			variant === "destructive"
+		className={`rounded-lg border p-4 ${variant === "destructive"
 				? "border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-900/20"
 				: variant === "success"
 					? "border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-900/20"
 					: "border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/20"
-		}`}
+			}`}
 	>
 		{children}
 	</div>

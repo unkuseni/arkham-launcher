@@ -58,7 +58,7 @@ import {
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Label } from "../ui/label";
+import { Label } from "../../ui/label";
 
 const SOL_MINT_ADDRESS = "So11111111111111111111111111111111111111112";
 
@@ -800,7 +800,7 @@ const SwapToken = () => {
 											{watchedValues.inputMint &&
 												watchedValues.outputMint &&
 												watchedValues.inputMint !==
-													watchedValues.outputMint && (
+												watchedValues.outputMint && (
 													<div className="p-3 bg-muted/50 rounded-lg border">
 														<div className="flex items-center gap-2 mb-2">
 															<Droplets className="w-4 h-4 text-muted-foreground" />
@@ -975,7 +975,7 @@ const SwapToken = () => {
 											{watchedValues.inputMint &&
 												watchedValues.outputMint &&
 												watchedValues.inputMint !==
-													watchedValues.outputMint && (
+												watchedValues.outputMint && (
 													<div className="p-3 bg-muted/50 rounded-lg border">
 														<div className="flex items-center gap-2 mb-2">
 															<Droplets className="w-4 h-4 text-muted-foreground" />

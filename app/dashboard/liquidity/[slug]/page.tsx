@@ -1,7 +1,7 @@
-import AddLiquidity from "@/components/forms/add-pool";
-import CreatePool from "@/components/forms/create-pool";
-import RemoveLiquidity from "@/components/forms/remove-pool";
-import SwapToken from "@/components/forms/swap-token";
+import AddLiquidity from "@/components/forms/pools/add-pool";
+import CreatePool from "@/components/forms/pools/create-pool";
+import RemoveLiquidity from "@/components/forms/pools/remove-pool";
+import SwapToken from "@/components/forms/pools/swap-token";
 import type { ReactNode } from "react";
 
 

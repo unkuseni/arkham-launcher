@@ -1,11 +1,11 @@
 
-import BurnTokens from "@/components/forms/burn-token";
-import CreateToken from "@/components/forms/create-token";
-import DelegateTokens from "@/components/forms/delegate-token";
-import FreezeToken from "@/components/forms/freeze-token";
-import MintTokens from "@/components/forms/mint-token";
-import TransferTokens from "@/components/forms/transfer-token";
-import UpdateToken from "@/components/forms/update-token";
+import BurnTokens from "@/components/forms/token/burn-token";
+import CreateToken from "@/components/forms/token/create-token";
+import DelegateTokens from "@/components/forms/token/delegate-token";
+import FreezeToken from "@/components/forms/token/freeze-token";
+import MintTokens from "@/components/forms/token/mint-token";
+import TransferTokens from "@/components/forms/token/transfer-token";
+import UpdateToken from "@/components/forms/token/update-token";
 import type { ReactNode } from "react";
 
 export default async function Page({
