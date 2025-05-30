@@ -1,15 +1,6 @@
 "use client";
 import {
-	type AssetToSend,
-	type AssetTransferDetail,
-	type RecipientInfo,
-	type SourceInfo,
-	type TransferError,
-	type TransferManyAssetsToManyRecipientsParams,
-	type TransferManyAssetsToSingleRecipientParams,
 	type TransferManyToOneParams,
-	type TransferOneToManyParams,
-	type TransferParams,
 	type TransferResult,
 	transferAsset,
 	transferManyAssetsToManyRecipients,
@@ -382,8 +373,8 @@ const EnhancedTransferComponent = () => {
 							<Card
 								key={mode.id}
 								className={`cursor-pointer transition-all duration-200 hover:shadow-md ${transferMode === mode.id
-										? "ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-950/20"
-										: ""
+									? "ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-950/20"
+									: ""
 									}`}
 								onClick={() => setTransferMode(mode.id as TransferMode)}
 							>
@@ -438,8 +429,8 @@ const EnhancedTransferComponent = () => {
 								<div
 									key={`${result.timestamp.getTime()}-${index}`}
 									className={`p-3 rounded-lg border ${result.success
-											? "border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-900/20"
-											: "border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-900/20"
+										? "border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-900/20"
+										: "border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-900/20"
 										}`}
 								>
 									<div className="flex items-center justify-between">
@@ -1165,10 +1156,10 @@ const Alert = ({
 }) => (
 	<div
 		className={`rounded-lg border p-4 ${variant === "destructive"
-				? "border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-900/20"
-				: variant === "success"
-					? "border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-900/20"
-					: "border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/20"
+			? "border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-900/20"
+			: variant === "success"
+				? "border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-900/20"
+				: "border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/20"
 			}`}
 	>
 		{children}

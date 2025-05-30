@@ -5,11 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import TokenSuccessModal, {
 	type TokenDetails,
 } from "@/components/cards/token-success-modal";
-import { uploadImageToCloudflareR2 } from "@/lib/s3-bucket";
-import { useState } from "react";
-import { useFieldArray, useForm } from "react-hook-form";
-import type { z } from "zod";
-import { Button } from "../ui/button";
+import { Button } from "@/components/ui/button";
 import {
 	Card,
 	CardContent,
@@ -17,8 +13,8 @@ import {
 	CardFooter,
 	CardHeader,
 	CardTitle,
-} from "../ui/card";
-import { Checkbox } from "../ui/checkbox";
+} from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
 	Form,
 	FormControl,
@@ -27,9 +23,13 @@ import {
 	FormItem,
 	FormLabel,
 	FormMessage,
-} from "../ui/form";
-import { Input } from "../ui/input";
-import { Textarea } from "../ui/textarea";
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { uploadImageToCloudflareR2 } from "@/lib/s3-bucket";
+import { useState } from "react";
+import { useFieldArray, useForm } from "react-hook-form";
+import type { z } from "zod";
 
 const CreateToken = () => {
 	return (
