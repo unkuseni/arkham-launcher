@@ -29,6 +29,7 @@ import { fetchMint } from "@metaplex-foundation/mpl-toolbox";
 import {
   AlertCircle,
   Copy,
+  DollarSign,
   ExternalLink,
   Info,
   RefreshCw,
@@ -53,6 +54,10 @@ interface PoolDisplayData {
   quoteTokenMint: string;
   baseTokenSymbol?: string;
   baseTokenDecimals?: number;
+  baseTokenFees?: number;
+  baseFundFees?: number;
+  quoteFundFees?: number;
+  quoteTokenFees?: number;
   quoteTokenDecimals?: number;
   quoteTokenSymbol?: string;
   baseReserve: string;
@@ -154,7 +159,11 @@ const PoolInfo = () => {
         poolPrice: poolInfo.poolPrice?.toNumber() || 0,
         baseTokenMint: poolInfo.mintA?.toString() || "Unknown",
         baseTokenDecimals: poolInfo.mintDecimalA || 0,
+        baseTokenFees: poolInfo.protocolFeesMintA?.toNumber() || 0,
+        baseFundFees: poolInfo.fundFeesMintA?.toNumber() || 0,
+        quoteFundFees: poolInfo.fundFeesMintB?.toNumber() || 0,
         quoteTokenMint: poolInfo.mintB?.toString() || "Unknown",
+        quoteTokenFees: poolInfo.protocolFeesMintB?.toNumber() || 0,
         quoteTokenDecimals: poolInfo.mintDecimalB || 0,
         baseTokenSymbol: "Token A", // You might want to fetch actual token metadata
         quoteTokenSymbol: "Token B",
@@ -402,6 +411,14 @@ const PoolInfo = () => {
                         <span className="text-sm text-muted-foreground">Reserve</span>
                         <span className="text-sm font-mono">{formatNumber(poolData.baseReserve, poolData.baseTokenDecimals)}</span>
                       </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Protocol Fees</span>
+                        <span className="text-sm font-mono">{formatNumber(poolData.baseTokenFees || 0, poolData.baseTokenDecimals)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Fund Fees</span>
+                        <span className="text-sm font-mono">{formatNumber(poolData.baseFundFees || 0, poolData.baseTokenDecimals)}</span>
+                      </div>
                     </div>
                   </div>
 
@@ -439,6 +456,52 @@ const PoolInfo = () => {
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-muted-foreground">Reserve</span>
                         <span className="text-sm font-mono">{formatNumber(poolData.quoteReserve, poolData.quoteTokenDecimals)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Protocol Fees</span>
+                        <span className="text-sm font-mono">{formatNumber(poolData.quoteTokenFees || 0, poolData.quoteTokenDecimals)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Fund Fees</span>
+                        <span className="text-sm font-mono">{formatNumber(poolData.quoteFundFees || 0, poolData.quoteTokenDecimals)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Fee Summary */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <DollarSign className="w-5 h-5" />
+                  Fee Summary
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <Label className="text-sm font-medium text-blue-700 dark:text-blue-300">Protocol Fees</Label>
+                    <div className="space-y-1 mt-2">
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">{poolData.baseTokenSymbol}:</span>
+                        <span className="text-sm font-mono">{formatNumber(poolData.baseTokenFees || 0, poolData.baseTokenDecimals)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">{poolData.quoteTokenSymbol}:</span>
+                        <span className="text-sm font-mono">{formatNumber(poolData.quoteTokenFees || 0, poolData.quoteTokenDecimals)}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-4 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
+                    <Label className="text-sm font-medium text-green-700 dark:text-green-300">Fund Fees</Label>
+                    <div className="space-y-1 mt-2">
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">{poolData.baseTokenSymbol}:</span>
+                        <span className="text-sm font-mono">{formatNumber(poolData.baseFundFees || 0, poolData.baseTokenDecimals)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">{poolData.quoteTokenSymbol}:</span>
+                        <span className="text-sm font-mono">{formatNumber(poolData.quoteFundFees || 0, poolData.quoteTokenDecimals)}</span>
                       </div>
                     </div>
                   </div>
