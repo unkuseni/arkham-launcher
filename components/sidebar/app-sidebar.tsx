@@ -21,36 +21,36 @@ const data = [
 	{
 		label: "Launchpad",
 		title: "Token Management",
-		url: "create-token",
+		url: "token/create-token",
 		icon: Coins,
 		items: [
 			{
 				title: "Create a Token",
-				url: "create-token",
+				url: "token/create-token",
 			},
 			{
 				title: "Mint a Token",
-				url: "mint-token",
+				url: "token/mint-token",
 			},
 			{
 				title: "Update a Token",
-				url: "update-token",
+				url: "token/update-token",
 			},
 			{
 				title: "Transfer a Token",
-				url: "transfer-token",
+				url: "token/transfer-token",
 			},
 			{
 				title: "Delegate a Token",
-				url: "delegate-token",
+				url: "token/delegate-token",
 			},
 			{
 				title: "Burn a Token",
-				url: "burn-token",
+				url: "token/burn-token",
 			},
 			{
 				title: "Freeze a Token",
-				url: "freeze-token",
+				url: "token/freeze-token",
 			},
 		],
 	},
@@ -62,24 +62,26 @@ const data = [
 		items: [
 			{
 				title: "Create a Pool",
-				url: "create-pool",
+				url: "liquidity/create-pool",
 			},
 			{
 				title: "Add Liquidity",
-				url: "add-liquidity",
+				url: "liquidity/add-liquidity",
 			},
 			{
 				title: "Remove Liquidity",
-				url: "remove-liquidity",
+				url: "liquidity/remove-liquidity",
 			},
 			{
 				title: "Swap Tokens",
-				url: "swap-tokens",
+				url: "liquidity/swap-tokens",
 			},
+			{ title: "Lock Liquidity", url: "liquidity/lock" },
 			{
 				title: "View Pool Info",
-				url: "view-pool-info",
+				url: "liquidity/view-pool-info",
 			},
+
 		],
 	},
 ];

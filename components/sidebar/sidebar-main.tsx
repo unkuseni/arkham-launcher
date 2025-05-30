@@ -67,6 +67,7 @@ export const SidebarMain = ({ links = data }: SidebarMainProps) => {
 										<Link
 											href={`/dashboard/${item.url}`}
 											className="flex items-center gap-2"
+											prefetch={true}
 										>
 											{item.icon && <item.icon className="size-4" />}
 											{item.title}
@@ -108,7 +109,7 @@ export const SidebarMain = ({ links = data }: SidebarMainProps) => {
 														className="font-inter"
 														isActive={currentPath === subItem.url}
 													>
-														<Link href={`/dashboard/${subItem.url}`}>
+														<Link href={`/dashboard/${subItem.url}`} prefetch={true}>
 															{subItem.title}
 														</Link>
 													</SidebarMenuSubButton>

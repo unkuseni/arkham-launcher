@@ -5,21 +5,20 @@ import {
 	freezeTokens,
 	thawTokens,
 } from "@/lib/token/freeze-token";
-import useUmiStore from "@/store/useUmiStore";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Lock, Snowflake, Sun } from "lucide-react";
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Badge } from "../ui/badge";
-import { Button } from "../ui/button";
+import { Badge } from "../../ui/badge";
+import { Button } from "../../ui/button";
 import {
 	Card,
 	CardContent,
 	CardDescription,
 	CardHeader,
 	CardTitle,
-} from "../ui/card";
+} from "../../ui/card";
 import {
 	Dialog,
 	DialogContent,
@@ -27,7 +26,7 @@ import {
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
-} from "../ui/dialog";
+} from "../../ui/dialog";
 import {
 	Form,
 	FormControl,
@@ -35,9 +34,9 @@ import {
 	FormItem,
 	FormLabel,
 	FormMessage,
-} from "../ui/form";
-import { Input } from "../ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
+} from "../../ui/form";
+import { Input } from "../../ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../ui/tabs";
 
 // Zod schema for freeze/thaw forms
 const freezeThawSchema = z.object({
@@ -57,7 +56,9 @@ export default function FreezeToken() {
 			<article className="mx-auto text-center space-y-2">
 				<div className="flex items-center justify-center gap-2 mb-4">
 					<Lock className="h-8 w-8 text-primary" />
-					<h1 className="text-4xl font-bold font-inter">Token Freeze Management</h1>
+					<h1 className="text-4xl font-bold font-inter">
+						Token Freeze Management
+					</h1>
 				</div>
 				<p className="text-muted-foreground text-lg">
 					Freeze or thaw SPL tokens to control their transferability
@@ -84,7 +85,8 @@ export default function FreezeToken() {
 								Freeze Token
 							</CardTitle>
 							<CardDescription>
-								Freeze a token account to prevent transfers. You must be the freeze authority for this token.
+								Freeze a token account to prevent transfers. You must be the
+								freeze authority for this token.
 							</CardDescription>
 						</CardHeader>
 						<CardContent>
@@ -101,7 +103,9 @@ export default function FreezeToken() {
 								Thaw Token
 							</CardTitle>
 							<CardDescription>
-								Thaw a previously frozen token account to restore transferability. You must be the freeze authority for this token.
+								Thaw a previously frozen token account to restore
+								transferability. You must be the freeze authority for this
+								token.
 							</CardDescription>
 						</CardHeader>
 						<CardContent>
@@ -177,7 +181,8 @@ function FreezeForm() {
 								</FormControl>
 								<FormMessage />
 								<div className="text-sm text-muted-foreground">
-									The owner of the token account to freeze. Defaults to your connected wallet.
+									The owner of the token account to freeze. Defaults to your
+									connected wallet.
 								</div>
 							</FormItem>
 						)}
@@ -292,7 +297,8 @@ function ThawForm() {
 								</FormControl>
 								<FormMessage />
 								<div className="text-sm text-muted-foreground">
-									The owner of the token account to thaw. Defaults to your connected wallet.
+									The owner of the token account to thaw. Defaults to your
+									connected wallet.
 								</div>
 							</FormItem>
 						)}
@@ -307,7 +313,9 @@ function ThawForm() {
 								</p>
 								<ul className="text-orange-700 dark:text-orange-300 space-y-1 text-xs">
 									<li>• You must be the freeze authority for this token</li>
-									<li>• This will restore transferability to the token account</li>
+									<li>
+										• This will restore transferability to the token account
+									</li>
 									<li>• Only works on previously frozen token accounts</li>
 								</ul>
 							</div>
@@ -347,7 +355,7 @@ function ThawForm() {
 function OperationSuccessDialog({
 	open,
 	onOpenChange,
-	result
+	result,
 }: {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
@@ -365,10 +373,13 @@ function OperationSuccessDialog({
 						) : (
 							<Sun className="h-5 w-5 text-orange-500" />
 						)}
-						{isFreeze ? "Token Frozen Successfully" : "Token Thawed Successfully"}
+						{isFreeze
+							? "Token Frozen Successfully"
+							: "Token Thawed Successfully"}
 					</DialogTitle>
 					<DialogDescription>
-						Your token {isFreeze ? "freeze" : "thaw"} operation completed successfully.
+						Your token {isFreeze ? "freeze" : "thaw"} operation completed
+						successfully.
 					</DialogDescription>
 				</DialogHeader>
 				<div className="space-y-3 py-4">
@@ -376,7 +387,11 @@ function OperationSuccessDialog({
 						<p className="text-sm font-medium">Operation:</p>
 						<Badge
 							variant="outline"
-							className={isFreeze ? "text-blue-600 border-blue-300" : "text-orange-600 border-orange-300"}
+							className={
+								isFreeze
+									? "text-blue-600 border-blue-300"
+									: "text-orange-600 border-orange-300"
+							}
 						>
 							{isFreeze ? "FREEZE" : "THAW"}
 						</Badge>

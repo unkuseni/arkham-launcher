@@ -4,15 +4,21 @@ import {
 	createV1,
 } from "@metaplex-foundation/mpl-token-metadata";
 import {
+	AuthorityType,
 	SPL_TOKEN_PROGRAM_ID,
-	createTokenIfMissing,
+	createMintWithAssociatedToken,
 	findAssociatedTokenPda,
-	getSplAssociatedTokenProgramId,
-	mintTokensTo,
+	setAuthority,
 	setComputeUnitPrice,
 } from "@metaplex-foundation/mpl-toolbox";
-import { generateSigner, percentAmount } from "@metaplex-foundation/umi";
+import {
+	type TransactionBuilder,
+	generateSigner,
+	percentAmount,
+	some,
+} from "@metaplex-foundation/umi";
 import { base58 } from "@metaplex-foundation/umi/serializers";
+
 import { z } from "zod";
 
 export const formSchema = z.object({
@@ -109,6 +115,10 @@ export const createSPLTokens = async (mintinfo: {
 	decimals: number;
 	supply: number;
 	metadataUri: string;
+	symbol: string;
+	revokeMint: boolean;
+	revokeUpdate: boolean;
+	revokeFreeze: boolean;
 }) => {
 	if (!mintinfo.name?.trim()) {
 		throw new Error("Token name is required");
@@ -129,16 +139,45 @@ export const createSPLTokens = async (mintinfo: {
 	}
 	try {
 		const mintSigner = generateSigner(umi);
-		const { name, decimals, supply, metadataUri } = mintinfo;
+		const {
+			name,
+			decimals,
+			supply,
+			metadataUri,
+			symbol,
+			revokeFreeze,
+			revokeMint,
+			revokeUpdate,
+		} = mintinfo;
 
 		const mintAddress = mintSigner.publicKey;
 
+		let mintIx: TransactionBuilder;
+		if (revokeFreeze) {
+			mintIx = createMintWithAssociatedToken(umi, {
+				mint: mintSigner,
+				decimals,
+				owner: umi.identity.publicKey,
+				amount: BigInt(supply * 10 ** decimals),
+
+				freezeAuthority: null,
+			});
+		} else {
+			mintIx = createMintWithAssociatedToken(umi, {
+				mint: mintSigner,
+				decimals,
+				owner: umi.identity.publicKey,
+				amount: BigInt(supply * 10 ** decimals),
+				freezeAuthority: some(umi.identity.publicKey),
+			});
+		}
+
 		const createFungibleIx = createV1(umi, {
 			mint: mintSigner,
-			authority: signer,
-			updateAuthority: signer,
+			updateAuthority: revokeUpdate ? undefined : signer,
 			isMutable: true,
 			name,
+			symbol,
 			decimals,
 			uri: metadataUri,
 			printSupply: {
@@ -150,29 +189,25 @@ export const createSPLTokens = async (mintinfo: {
 			splTokenProgram: SPL_TOKEN_PROGRAM_ID,
 		});
 
-		const createTokenIx = createTokenIfMissing(umi, {
-			mint: mintAddress,
-			owner: umi.identity.publicKey,
-			ataProgram: getSplAssociatedTokenProgramId(umi),
-		});
-
-		// Get the Associated Token Account (ATA) address
 		const associatedTokenAccount = findAssociatedTokenPda(umi, {
 			mint: mintAddress,
-			owner: umi.identity.publicKey,
+			owner: signer.publicKey,
 		});
 
-		const mintTokensIx = mintTokensTo(umi, {
-			mint: mintSigner.publicKey,
-			token: associatedTokenAccount,
-			amount: BigInt(supply * 10 ** decimals),
-		});
+		let txBuilder = mintIx.add(createFungibleIx);
 
-		const tx = await createFungibleIx
-			.add(createTokenIx)
-			.add(mintTokensIx)
+		if (revokeMint) {
+			const revokeMintIx = setAuthority(umi, {
+				owned: mintSigner.publicKey,
+				owner: umi.identity,
+				authorityType: AuthorityType.MintTokens,
+				newAuthority: null,
+			});
+			txBuilder = txBuilder.add(revokeMintIx);
+		}
+		const tx = await txBuilder
 			.add(setComputeUnitPrice(umi, { microLamports: 2_500_000 }))
-			.sendAndConfirm(umi);
+			.sendAndConfirm(umi, { confirm: { commitment: "finalized" } });
 
 		const signature = base58.deserialize(tx.signature)[0];
 		console.log("\nTransaction Complete");
@@ -190,7 +225,7 @@ export const createSPLTokens = async (mintinfo: {
 		return {
 			signature,
 			mintAddress: mintAddress.toString(),
-			tokenAddress: associatedTokenAccount.toString(),
+			tokenAddress: associatedTokenAccount[0].toString(),
 		};
 	} catch (error) {
 		console.error("Failed to create SPL token:", error);

@@ -14,22 +14,22 @@ import {
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Button } from "../ui/button";
+import { Button } from "../../ui/button";
 import {
 	Card,
 	CardContent,
 	CardDescription,
 	CardHeader,
 	CardTitle,
-} from "../ui/card";
-import { Checkbox } from "../ui/checkbox";
+} from "../../ui/card";
+import { Checkbox } from "../../ui/checkbox";
 import {
 	Dialog,
 	DialogContent,
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
-} from "../ui/dialog";
+} from "../../ui/dialog";
 import {
 	Form,
 	FormControl,
@@ -38,10 +38,10 @@ import {
 	FormItem,
 	FormLabel,
 	FormMessage,
-} from "../ui/form";
-import { Input } from "../ui/input";
-import { Separator } from "../ui/separator";
-import { Textarea } from "../ui/textarea";
+} from "../../ui/form";
+import { Input } from "../../ui/input";
+import { Separator } from "../../ui/separator";
+import { Textarea } from "../../ui/textarea";
 
 const formSchema = z.object({
 	mintAddress: z.string().nonempty("Mint address is required"),
@@ -386,11 +386,10 @@ const UpdateToken = () => {
 
 													{/* Upload Area */}
 													<div
-														className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-															isDragging
+														className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors ${isDragging
 																? "border-primary bg-primary/5"
 																: "border-muted-foreground/25 hover:border-muted-foreground/50"
-														} ${imagePreview ? "mt-4" : ""}`}
+															} ${imagePreview ? "mt-4" : ""}`}
 														onDrop={handleDrop}
 														onDragOver={handleDragOver}
 														onDragLeave={handleDragLeave}

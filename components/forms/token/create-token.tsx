@@ -5,11 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import TokenSuccessModal, {
 	type TokenDetails,
 } from "@/components/cards/token-success-modal";
-import { uploadImageToCloudflareR2 } from "@/lib/s3-bucket";
-import { useState } from "react";
-import { useFieldArray, useForm } from "react-hook-form";
-import type { z } from "zod";
-import { Button } from "../ui/button";
+import { Button } from "@/components/ui/button";
 import {
 	Card,
 	CardContent,
@@ -17,8 +13,8 @@ import {
 	CardFooter,
 	CardHeader,
 	CardTitle,
-} from "../ui/card";
-import { Checkbox } from "../ui/checkbox";
+} from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
 	Form,
 	FormControl,
@@ -27,9 +23,13 @@ import {
 	FormItem,
 	FormLabel,
 	FormMessage,
-} from "../ui/form";
-import { Input } from "../ui/input";
-import { Textarea } from "../ui/textarea";
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { uploadImageToCloudflareR2 } from "@/lib/s3-bucket";
+import { useState } from "react";
+import { useFieldArray, useForm } from "react-hook-form";
+import type { z } from "zod";
 
 const CreateToken = () => {
 	return (
@@ -142,7 +142,7 @@ const TokenForm = () => {
 
 	async function onSubmit(values: z.infer<typeof formSchema>) {
 		try {
-			const { name, ticker, description, supply, socialLinks, decimals } =
+			const { name, ticker, description, supply, socialLinks, decimals, revokeFreeze, revokeMint, revokeUpdate } =
 				values;
 
 			// Image URL should have been set on selection
@@ -176,7 +176,7 @@ const TokenForm = () => {
 			const metadataUri = `https://gateway.pinata.cloud/ipfs/${data.IpfsHash}`;
 
 			// Mint the token
-			const mintInfo = { name, decimals, supply, metadataUri };
+			const mintInfo = { name, decimals, supply, metadataUri, symbol: ticker, revokeMint, revokeFreeze, revokeUpdate };
 			const txResult = await createSPLTokens(mintInfo);
 
 			// Show success modal
@@ -345,8 +345,8 @@ const TokenForm = () => {
 												placeholder="1,000,000,000"
 												value={
 													field.value === undefined ||
-													field.value === null ||
-													Number.isNaN(Number(field.value))
+														field.value === null ||
+														Number.isNaN(Number(field.value))
 														? ""
 														: Number(field.value).toLocaleString()
 												}

@@ -1,15 +1,6 @@
 "use client";
 import {
-	type AssetToSend,
-	type AssetTransferDetail,
-	type RecipientInfo,
-	type SourceInfo,
-	type TransferError,
-	type TransferManyAssetsToManyRecipientsParams,
-	type TransferManyAssetsToSingleRecipientParams,
 	type TransferManyToOneParams,
-	type TransferOneToManyParams,
-	type TransferParams,
 	type TransferResult,
 	transferAsset,
 	transferManyAssetsToManyRecipients,
@@ -22,16 +13,16 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { z } from "zod";
-import { Badge } from "../ui/badge";
-import { Button } from "../ui/button";
+import { Badge } from "../../ui/badge";
+import { Button } from "../../ui/button";
 import {
 	Card,
 	CardContent,
 	CardDescription,
 	CardHeader,
 	CardTitle,
-} from "../ui/card";
-import { Checkbox } from "../ui/checkbox";
+} from "../../ui/card";
+import { Checkbox } from "../../ui/checkbox";
 import {
 	Form,
 	FormControl,
@@ -39,9 +30,9 @@ import {
 	FormItem,
 	FormLabel,
 	FormMessage,
-} from "../ui/form";
-import { Input } from "../ui/input";
-import { Label } from "../ui/label";
+} from "../../ui/form";
+import { Input } from "../../ui/input";
+import { Label } from "../../ui/label";
 import {
 	Select,
 	SelectContent,
@@ -49,15 +40,15 @@ import {
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "../ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
-import { Textarea } from "../ui/textarea";
+} from "../../ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../ui/tabs";
+import { Textarea } from "../../ui/textarea";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
-} from "../ui/tooltip";
+} from "../../ui/tooltip";
 
 const SOL_MINT_ADDRESS = "So11111111111111111111111111111111111111112"; // Wrapped SOL mint
 const NATIVE_SOL_ADDRESS = "11111111111111111111111111111111";
@@ -287,7 +278,6 @@ const EnhancedTransferComponent = () => {
 
 		loadTokensWithSol();
 	}, [signer, connectionStatus, getTokenBalances, umi]);
-
 
 	const addResult = (result: TransferResult<string | string[]>) => {
 		setResults((prev) => [

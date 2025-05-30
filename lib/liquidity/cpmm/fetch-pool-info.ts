@@ -1,4 +1,5 @@
 import useUmiStore from "@/store/useUmiStore"; // Import the Umi store
+import type { CpmmRpcData } from "@raydium-io/raydium-sdk-v2";
 import { initSdk } from "../index";
 
 export const fetchRpcPoolInfo = async (poolId?: string) => {
@@ -27,7 +28,7 @@ export const fetchRpcPoolInfo = async (poolId?: string) => {
 
 	try {
 		const poolInfos = await raydium.cpmm.getRpcPoolInfos([targetPoolId]);
-		const poolInfo = poolInfos[targetPoolId];
+		const poolInfo: CpmmRpcData = poolInfos[targetPoolId];
 
 		if (poolInfo) {
 			console.log(`Pool info for ${targetPoolId}:`, poolInfo);

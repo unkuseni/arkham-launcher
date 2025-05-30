@@ -1,6 +1,39 @@
 "use client";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
-	type BurnTokenParams,
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from "@/components/ui/card";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
+import {
+	Form,
+	FormControl,
+	FormField,
+	FormItem,
+	FormLabel,
+	FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
 	burnAllTokens,
 	burnSPLTokens,
 } from "@/lib/token/burn-token";
@@ -12,34 +45,6 @@ import { AlertTriangle, Flame, Target } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Badge } from "../ui/badge";
-import { Button } from "../ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "../ui/card";
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "../ui/dialog";
-import {
-	Form,
-	FormControl,
-	FormField,
-	FormItem,
-	FormLabel,
-	FormMessage,
-} from "../ui/form";
-import { Input } from "../ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 
 // Zod schema for burn form
 const burnSchema = z.object({
@@ -132,15 +137,18 @@ export default function BurnTokens() {
 }
 
 function BurnForm() {
-	const { umi, connectionStatus, getTokenBalances, signer, connection } = useUmiStore.getState();
-	const [availableTokens, setAvailableTokens] = useState<Array<{
-		mint: string;
-		amount: bigint;
-		decimals: number;
-		symbol: string;
-		name: string;
-		formattedAmount: string;
-	}>>([]);
+	const { umi, connectionStatus, getTokenBalances, signer, connection } =
+		useUmiStore.getState();
+	const [availableTokens, setAvailableTokens] = useState<
+		Array<{
+			mint: string;
+			amount: bigint;
+			decimals: number;
+			symbol: string;
+			name: string;
+			formattedAmount: string;
+		}>
+	>([]);
 	const [loadingTokens, setLoadingTokens] = useState(false);
 	const [decimals, setDecimals] = useState<number>(1);
 	const [tokenBalance, setTokenBalance] = useState<bigint | null>(null);
@@ -164,17 +172,20 @@ function BurnForm() {
 			setLoadingTokens(true);
 			try {
 				const balances = await getTokenBalances();
-				const formattedTokens = balances.map(token => ({
+				const formattedTokens = balances.map((token) => ({
 					mint: token.mint.toString(),
 					amount: token.amount,
 					decimals: token.decimals,
 					symbol: token.symbol,
 					name: token.name,
-					formattedAmount: (Number(token.amount) / 10 ** token.decimals).toLocaleString()
+					formattedAmount: (
+						Number(token.amount) /
+						10 ** token.decimals
+					).toLocaleString(),
 				}));
 				setAvailableTokens(formattedTokens);
 			} catch (error) {
-				console.error('Failed to load token balances:', error);
+				console.error("Failed to load token balances:", error);
 				setAvailableTokens([]);
 			} finally {
 				setLoadingTokens(false);
@@ -205,24 +216,26 @@ function BurnForm() {
 		return () => sub.unsubscribe();
 	}, [form, newConnection]);
 
-
 	const refreshTokenBalances = async () => {
 		if (!signer || connectionStatus !== ConnectionStatus.CONNECTED) return;
 
 		setLoadingTokens(true);
 		try {
 			const balances = await getTokenBalances();
-			const formattedTokens = balances.map(token => ({
+			const formattedTokens = balances.map((token) => ({
 				mint: token.mint.toString(),
 				amount: token.amount,
 				decimals: token.decimals,
 				symbol: token.symbol,
 				name: token.name,
-				formattedAmount: (Number(token.amount) / 10 ** token.decimals).toLocaleString()
+				formattedAmount: (
+					Number(token.amount) /
+					10 ** token.decimals
+				).toLocaleString(),
 			}));
 			setAvailableTokens(formattedTokens);
 		} catch (error) {
-			console.error('Failed to refresh token balances:', error);
+			console.error("Failed to refresh token balances:", error);
 		} finally {
 			setLoadingTokens(false);
 		}
@@ -255,7 +268,6 @@ function BurnForm() {
 		<>
 			<Form {...form}>
 				<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-
 					{/* Token Selector */}
 					<div className="space-y-3">
 						<div className="flex items-center justify-between">
@@ -278,7 +290,9 @@ function BurnForm() {
 						{signer && connectionStatus === ConnectionStatus.CONNECTED ? (
 							<Select
 								onValueChange={(value) => {
-									const selectedToken = availableTokens.find(t => t.mint === value);
+									const selectedToken = availableTokens.find(
+										(t) => t.mint === value,
+									);
 									if (selectedToken) {
 										form.setValue("mintAddress", selectedToken.mint);
 										setDecimals(selectedToken.decimals);
@@ -288,13 +302,15 @@ function BurnForm() {
 								disabled={loadingTokens}
 							>
 								<SelectTrigger className="w-full">
-									<SelectValue placeholder={
-										loadingTokens
-											? "Loading tokens..."
-											: availableTokens.length === 0
-												? "No tokens found"
-												: "Select a token from your wallet"
-									} />
+									<SelectValue
+										placeholder={
+											loadingTokens
+												? "Loading tokens..."
+												: availableTokens.length === 0
+													? "No tokens found"
+													: "Select a token from your wallet"
+										}
+									/>
 								</SelectTrigger>
 								<SelectContent>
 									{availableTokens.map((token) => (
@@ -307,7 +323,9 @@ function BurnForm() {
 													</span>
 												</div>
 												<div className="flex flex-col items-end ml-4">
-													<span className="text-sm font-mono">{token.formattedAmount}</span>
+													<span className="text-sm font-mono">
+														{token.formattedAmount}
+													</span>
 													<span className="text-xs text-muted-foreground">
 														{token.mint.slice(0, 4)}...{token.mint.slice(-4)}
 													</span>
@@ -319,7 +337,9 @@ function BurnForm() {
 							</Select>
 						) : (
 							<div className="text-sm text-muted-foreground p-3 border rounded-md bg-muted/50">
-								{!signer ? "Connect your wallet to see available tokens" : "Connecting..."}
+								{!signer
+									? "Connect your wallet to see available tokens"
+									: "Connecting..."}
 							</div>
 						)}
 					</div>
@@ -329,7 +349,9 @@ function BurnForm() {
 							<span className="w-full border-t" />
 						</div>
 						<div className="relative flex justify-center text-xs uppercase">
-							<span className="bg-background px-2 text-muted-foreground">Or enter manually</span>
+							<span className="bg-background px-2 text-muted-foreground">
+								Or enter manually
+							</span>
 						</div>
 					</div>
 
@@ -495,15 +517,18 @@ function BurnForm() {
 }
 
 function BurnAllForm() {
-	const { umi, connectionStatus, getTokenBalances, signer, connection } = useUmiStore.getState();
-	const [availableTokens, setAvailableTokens] = useState<Array<{
-		mint: string;
-		amount: bigint;
-		decimals: number;
-		symbol: string;
-		name: string;
-		formattedAmount: string;
-	}>>([]);
+	const { umi, connectionStatus, getTokenBalances, signer, connection } =
+		useUmiStore.getState();
+	const [availableTokens, setAvailableTokens] = useState<
+		Array<{
+			mint: string;
+			amount: bigint;
+			decimals: number;
+			symbol: string;
+			name: string;
+			formattedAmount: string;
+		}>
+	>([]);
 	const [loadingTokens, setLoadingTokens] = useState(false);
 	const [decimals, setDecimals] = useState<number>(1);
 	const [tokenBalance, setTokenBalance] = useState<bigint | null>(null);
@@ -518,8 +543,6 @@ function BurnAllForm() {
 		defaultValues: { mintAddress: "", ownerAddress: "" },
 	});
 
-
-
 	useEffect(() => {
 		const loadTokenBalances = async () => {
 			if (!signer || connectionStatus !== ConnectionStatus.CONNECTED) {
@@ -530,17 +553,20 @@ function BurnAllForm() {
 			setLoadingTokens(true);
 			try {
 				const balances = await getTokenBalances();
-				const formattedTokens = balances.map(token => ({
+				const formattedTokens = balances.map((token) => ({
 					mint: token.mint.toString(),
 					amount: token.amount,
 					decimals: token.decimals,
 					symbol: token.symbol,
 					name: token.name,
-					formattedAmount: (Number(token.amount) / 10 ** token.decimals).toLocaleString()
+					formattedAmount: (
+						Number(token.amount) /
+						10 ** token.decimals
+					).toLocaleString(),
 				}));
 				setAvailableTokens(formattedTokens);
 			} catch (error) {
-				console.error('Failed to load token balances:', error);
+				console.error("Failed to load token balances:", error);
 				setAvailableTokens([]);
 			} finally {
 				setLoadingTokens(false);
@@ -571,24 +597,26 @@ function BurnAllForm() {
 		return () => sub.unsubscribe();
 	}, [form, newConnection]);
 
-
 	const refreshTokenBalances = async () => {
 		if (!signer || connectionStatus !== ConnectionStatus.CONNECTED) return;
 
 		setLoadingTokens(true);
 		try {
 			const balances = await getTokenBalances();
-			const formattedTokens = balances.map(token => ({
+			const formattedTokens = balances.map((token) => ({
 				mint: token.mint.toString(),
 				amount: token.amount,
 				decimals: token.decimals,
 				symbol: token.symbol,
 				name: token.name,
-				formattedAmount: (Number(token.amount) / 10 ** token.decimals).toLocaleString()
+				formattedAmount: (
+					Number(token.amount) /
+					10 ** token.decimals
+				).toLocaleString(),
 			}));
 			setAvailableTokens(formattedTokens);
 		} catch (error) {
-			console.error('Failed to refresh token balances:', error);
+			console.error("Failed to refresh token balances:", error);
 		} finally {
 			setLoadingTokens(false);
 		}
@@ -625,7 +653,6 @@ function BurnAllForm() {
 		<>
 			<Form {...form}>
 				<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-
 					{/* Token Selector */}
 					<div className="space-y-3">
 						<div className="flex items-center justify-between">
@@ -648,7 +675,9 @@ function BurnAllForm() {
 						{signer && connectionStatus === ConnectionStatus.CONNECTED ? (
 							<Select
 								onValueChange={(value) => {
-									const selectedToken = availableTokens.find(t => t.mint === value);
+									const selectedToken = availableTokens.find(
+										(t) => t.mint === value,
+									);
 									if (selectedToken) {
 										form.setValue("mintAddress", selectedToken.mint);
 										setDecimals(selectedToken.decimals);
@@ -658,13 +687,15 @@ function BurnAllForm() {
 								disabled={loadingTokens}
 							>
 								<SelectTrigger className="w-full">
-									<SelectValue placeholder={
-										loadingTokens
-											? "Loading tokens..."
-											: availableTokens.length === 0
-												? "No tokens found"
-												: "Select a token from your wallet"
-									} />
+									<SelectValue
+										placeholder={
+											loadingTokens
+												? "Loading tokens..."
+												: availableTokens.length === 0
+													? "No tokens found"
+													: "Select a token from your wallet"
+										}
+									/>
 								</SelectTrigger>
 								<SelectContent>
 									{availableTokens.map((token) => (
@@ -677,7 +708,9 @@ function BurnAllForm() {
 													</span>
 												</div>
 												<div className="flex flex-col items-end ml-4">
-													<span className="text-sm font-mono">{token.formattedAmount}</span>
+													<span className="text-sm font-mono">
+														{token.formattedAmount}
+													</span>
 													<span className="text-xs text-muted-foreground">
 														{token.mint.slice(0, 4)}...{token.mint.slice(-4)}
 													</span>
@@ -689,7 +722,9 @@ function BurnAllForm() {
 							</Select>
 						) : (
 							<div className="text-sm text-muted-foreground p-3 border rounded-md bg-muted/50">
-								{!signer ? "Connect your wallet to see available tokens" : "Connecting..."}
+								{!signer
+									? "Connect your wallet to see available tokens"
+									: "Connecting..."}
 							</div>
 						)}
 					</div>
@@ -699,7 +734,9 @@ function BurnAllForm() {
 							<span className="w-full border-t" />
 						</div>
 						<div className="relative flex justify-center text-xs uppercase">
-							<span className="bg-background px-2 text-muted-foreground">Or enter manually</span>
+							<span className="bg-background px-2 text-muted-foreground">
+								Or enter manually
+							</span>
 						</div>
 					</div>
 

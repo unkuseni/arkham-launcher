@@ -13,15 +13,15 @@ import { Coins, Plus, Trash2, Upload, Users } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { z } from "zod";
-import { Badge } from "../ui/badge";
-import { Button } from "../ui/button";
+import { Badge } from "../../ui/badge";
+import { Button } from "../../ui/button";
 import {
 	Card,
 	CardContent,
 	CardDescription,
 	CardHeader,
 	CardTitle,
-} from "../ui/card";
+} from "../../ui/card";
 import {
 	Dialog,
 	DialogContent,
@@ -29,7 +29,7 @@ import {
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
-} from "../ui/dialog";
+} from "../../ui/dialog";
 import {
 	Form,
 	FormControl,
@@ -37,17 +37,17 @@ import {
 	FormItem,
 	FormLabel,
 	FormMessage,
-} from "../ui/form";
-import { Input } from "../ui/input";
+} from "../../ui/form";
+import { Input } from "../../ui/input";
 import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "../ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
-import { Textarea } from "../ui/textarea";
+} from "../../ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../ui/tabs";
+import { Textarea } from "../../ui/textarea";
 
 // Zod schema for single mint form
 const singleMintSchema = z.object({
@@ -145,15 +145,18 @@ export default function MintTokens() {
 }
 
 function SingleMintForm() {
-	const { umi, getTokenBalances, signer, connectionStatus, connection } = useUmiStore();
-	const [availableTokens, setAvailableTokens] = useState<Array<{
-		mint: string;
-		amount: bigint;
-		decimals: number;
-		symbol: string;
-		name: string;
-		formattedAmount: string;
-	}>>([]);
+	const { umi, getTokenBalances, signer, connectionStatus, connection } =
+		useUmiStore();
+	const [availableTokens, setAvailableTokens] = useState<
+		Array<{
+			mint: string;
+			amount: bigint;
+			decimals: number;
+			symbol: string;
+			name: string;
+			formattedAmount: string;
+		}>
+	>([]);
 	const [loadingTokens, setLoadingTokens] = useState(false);
 	const [decimals, setDecimals] = useState<number>(1);
 	const [result, setResult] = useState<MintResult | null>(null);
@@ -177,17 +180,20 @@ function SingleMintForm() {
 			setLoadingTokens(true);
 			try {
 				const balances = await getTokenBalances();
-				const formattedTokens = balances.map(token => ({
+				const formattedTokens = balances.map((token) => ({
 					mint: token.mint.toString(),
 					amount: token.amount,
 					decimals: token.decimals,
 					symbol: token.symbol,
 					name: token.name,
-					formattedAmount: (Number(token.amount) / 10 ** token.decimals).toLocaleString()
+					formattedAmount: (
+						Number(token.amount) /
+						10 ** token.decimals
+					).toLocaleString(),
 				}));
 				setAvailableTokens(formattedTokens);
 			} catch (error) {
-				console.error('Failed to load token balances:', error);
+				console.error("Failed to load token balances:", error);
 				setAvailableTokens([]);
 			} finally {
 				setLoadingTokens(false);
@@ -204,17 +210,20 @@ function SingleMintForm() {
 		setLoadingTokens(true);
 		try {
 			const balances = await getTokenBalances();
-			const formattedTokens = balances.map(token => ({
+			const formattedTokens = balances.map((token) => ({
 				mint: token.mint.toString(),
 				amount: token.amount,
 				decimals: token.decimals,
 				symbol: token.symbol,
 				name: token.name,
-				formattedAmount: (Number(token.amount) / 10 ** token.decimals).toLocaleString()
+				formattedAmount: (
+					Number(token.amount) /
+					10 ** token.decimals
+				).toLocaleString(),
 			}));
 			setAvailableTokens(formattedTokens);
 		} catch (error) {
-			console.error('Failed to refresh token balances:', error);
+			console.error("Failed to refresh token balances:", error);
 		} finally {
 			setLoadingTokens(false);
 		}
@@ -279,7 +288,9 @@ function SingleMintForm() {
 						{signer && connectionStatus === ConnectionStatus.CONNECTED ? (
 							<Select
 								onValueChange={(value) => {
-									const selectedToken = availableTokens.find(t => t.mint === value);
+									const selectedToken = availableTokens.find(
+										(t) => t.mint === value,
+									);
 									if (selectedToken) {
 										form.setValue("mintAddress", selectedToken.mint);
 										setDecimals(selectedToken.decimals);
@@ -288,13 +299,15 @@ function SingleMintForm() {
 								disabled={loadingTokens}
 							>
 								<SelectTrigger className="w-full">
-									<SelectValue placeholder={
-										loadingTokens
-											? "Loading tokens..."
-											: availableTokens.length === 0
-												? "No tokens found"
-												: "Select a token from your wallet"
-									} />
+									<SelectValue
+										placeholder={
+											loadingTokens
+												? "Loading tokens..."
+												: availableTokens.length === 0
+													? "No tokens found"
+													: "Select a token from your wallet"
+										}
+									/>
 								</SelectTrigger>
 								<SelectContent>
 									{availableTokens.map((token) => (
@@ -307,7 +320,9 @@ function SingleMintForm() {
 													</span>
 												</div>
 												<div className="flex flex-col items-end ml-4">
-													<span className="text-sm font-mono">{token.formattedAmount}</span>
+													<span className="text-sm font-mono">
+														{token.formattedAmount}
+													</span>
 													<span className="text-xs text-muted-foreground">
 														{token.mint.slice(0, 4)}...{token.mint.slice(-4)}
 													</span>
@@ -319,7 +334,9 @@ function SingleMintForm() {
 							</Select>
 						) : (
 							<div className="text-sm text-muted-foreground p-3 border rounded-md bg-muted/50">
-								{!signer ? "Connect your wallet to see available tokens" : "Connecting..."}
+								{!signer
+									? "Connect your wallet to see available tokens"
+									: "Connecting..."}
 							</div>
 						)}
 					</div>
@@ -329,7 +346,9 @@ function SingleMintForm() {
 							<span className="w-full border-t" />
 						</div>
 						<div className="relative flex justify-center text-xs uppercase">
-							<span className="bg-background px-2 text-muted-foreground">Or enter manually</span>
+							<span className="bg-background px-2 text-muted-foreground">
+								Or enter manually
+							</span>
 						</div>
 					</div>
 
@@ -456,15 +475,18 @@ function SingleMintForm() {
 }
 
 function MultiMintForm() {
-	const { umi, getTokenBalances, signer, connectionStatus, connection } = useUmiStore();
-	const [availableTokens, setAvailableTokens] = useState<Array<{
-		mint: string;
-		amount: bigint;
-		decimals: number;
-		symbol: string;
-		name: string;
-		formattedAmount: string;
-	}>>([]);
+	const { umi, getTokenBalances, signer, connectionStatus, connection } =
+		useUmiStore();
+	const [availableTokens, setAvailableTokens] = useState<
+		Array<{
+			mint: string;
+			amount: bigint;
+			decimals: number;
+			symbol: string;
+			name: string;
+			formattedAmount: string;
+		}>
+	>([]);
 	const [loadingTokens, setLoadingTokens] = useState(false);
 	const [decimals, setDecimals] = useState<number>(1);
 	const [result, setResult] = useState<MintToMultipleResult | null>(null);
@@ -498,17 +520,20 @@ function MultiMintForm() {
 			setLoadingTokens(true);
 			try {
 				const balances = await getTokenBalances();
-				const formattedTokens = balances.map(token => ({
+				const formattedTokens = balances.map((token) => ({
 					mint: token.mint.toString(),
 					amount: token.amount,
 					decimals: token.decimals,
 					symbol: token.symbol,
 					name: token.name,
-					formattedAmount: (Number(token.amount) / 10 ** token.decimals).toLocaleString()
+					formattedAmount: (
+						Number(token.amount) /
+						10 ** token.decimals
+					).toLocaleString(),
 				}));
 				setAvailableTokens(formattedTokens);
 			} catch (error) {
-				console.error('Failed to load token balances:', error);
+				console.error("Failed to load token balances:", error);
 				setAvailableTokens([]);
 			} finally {
 				setLoadingTokens(false);
@@ -525,17 +550,20 @@ function MultiMintForm() {
 		setLoadingTokens(true);
 		try {
 			const balances = await getTokenBalances();
-			const formattedTokens = balances.map(token => ({
+			const formattedTokens = balances.map((token) => ({
 				mint: token.mint.toString(),
 				amount: token.amount,
 				decimals: token.decimals,
 				symbol: token.symbol,
 				name: token.name,
-				formattedAmount: (Number(token.amount) / 10 ** token.decimals).toLocaleString()
+				formattedAmount: (
+					Number(token.amount) /
+					10 ** token.decimals
+				).toLocaleString(),
 			}));
 			setAvailableTokens(formattedTokens);
 		} catch (error) {
-			console.error('Failed to refresh token balances:', error);
+			console.error("Failed to refresh token balances:", error);
 		} finally {
 			setLoadingTokens(false);
 		}
@@ -651,7 +679,9 @@ function MultiMintForm() {
 						{signer && connectionStatus === ConnectionStatus.CONNECTED ? (
 							<Select
 								onValueChange={(value) => {
-									const selectedToken = availableTokens.find(t => t.mint === value);
+									const selectedToken = availableTokens.find(
+										(t) => t.mint === value,
+									);
 									if (selectedToken) {
 										form.setValue("mintAddress", selectedToken.mint);
 										setDecimals(selectedToken.decimals);
@@ -660,13 +690,15 @@ function MultiMintForm() {
 								disabled={loadingTokens}
 							>
 								<SelectTrigger className="w-full">
-									<SelectValue placeholder={
-										loadingTokens
-											? "Loading tokens..."
-											: availableTokens.length === 0
-												? "No tokens found"
-												: "Select a token from your wallet"
-									} />
+									<SelectValue
+										placeholder={
+											loadingTokens
+												? "Loading tokens..."
+												: availableTokens.length === 0
+													? "No tokens found"
+													: "Select a token from your wallet"
+										}
+									/>
 								</SelectTrigger>
 								<SelectContent>
 									{availableTokens.map((token) => (
@@ -679,7 +711,9 @@ function MultiMintForm() {
 													</span>
 												</div>
 												<div className="flex flex-col items-end ml-4">
-													<span className="text-sm font-mono">{token.formattedAmount}</span>
+													<span className="text-sm font-mono">
+														{token.formattedAmount}
+													</span>
 													<span className="text-xs text-muted-foreground">
 														{token.mint.slice(0, 4)}...{token.mint.slice(-4)}
 													</span>
@@ -691,7 +725,9 @@ function MultiMintForm() {
 							</Select>
 						) : (
 							<div className="text-sm text-muted-foreground p-3 border rounded-md bg-muted/50">
-								{!signer ? "Connect your wallet to see available tokens" : "Connecting..."}
+								{!signer
+									? "Connect your wallet to see available tokens"
+									: "Connecting..."}
 							</div>
 						)}
 					</div>
@@ -701,7 +737,9 @@ function MultiMintForm() {
 							<span className="w-full border-t" />
 						</div>
 						<div className="relative flex justify-center text-xs uppercase">
-							<span className="bg-background px-2 text-muted-foreground">Or enter manually</span>
+							<span className="bg-background px-2 text-muted-foreground">
+								Or enter manually
+							</span>
 						</div>
 					</div>
 
