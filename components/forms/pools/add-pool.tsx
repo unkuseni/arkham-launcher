@@ -235,7 +235,9 @@ const AddLiquidity = () => {
 		};
 
 		calculateEstimates();
-	}, [watchedValues]);
+	}, [watchedValues.inputAmount,
+	watchedValues.slippagePercent,
+	watchedValues.baseIn]);
 
 	const TokenSelector = ({
 		label,
