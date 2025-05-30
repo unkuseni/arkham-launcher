@@ -76,10 +76,12 @@ const data = [
 				title: "Swap Tokens",
 				url: "liquidity/swap-tokens",
 			},
+			{ title: "Lock Liquidity", url: "liquidity/lock" },
 			{
 				title: "View Pool Info",
 				url: "liquidity/view-pool-info",
 			},
+
 		],
 	},
 ];
