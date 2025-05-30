@@ -21,6 +21,7 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
 	Select,
 	SelectContent,
@@ -42,7 +43,6 @@ import BN from "bn.js";
 import {
 	AlertCircle,
 	ArrowDown,
-	DollarSign,
 	Droplets,
 	Plus,
 	RefreshCw,
@@ -52,7 +52,6 @@ import {
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Label } from "../ui/label";
 
 const SOL_MINT_ADDRESS = "So11111111111111111111111111111111111111112";
 
@@ -236,11 +235,7 @@ const AddLiquidity = () => {
 		};
 
 		calculateEstimates();
-	}, [
-		watchedValues.inputAmount,
-		watchedValues.slippagePercent,
-		watchedValues.baseIn,
-	]);
+	}, [watchedValues]);
 
 	const TokenSelector = ({
 		label,
