@@ -154,7 +154,7 @@ async function getFeeConfigs(
 			timestamp: now,
 			ttl: CACHE_TTL,
 		};
-
+		console.log(fetchedConfigs);
 		return fetchedConfigs;
 	} catch (error) {
 		throw new CPMMPoolCreationError(
