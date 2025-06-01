@@ -298,7 +298,9 @@ export const createCPMMPool = async (
 			mintAAmount,
 			mintBAmount,
 			startTime: poolStartTime ?? new BN(0),
-			feeConfig: feeConfigs[feeConfigIndex],
+			feeConfig:
+				feeConfigs.find((feeConfig) => feeConfig.index === feeConfigIndex) ||
+				feeConfigs[feeConfigIndex],
 			associatedOnly: false,
 			ownerInfo: {
 				useSOLBalance: true,

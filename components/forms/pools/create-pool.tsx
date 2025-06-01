@@ -21,6 +21,7 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
 	Select,
 	SelectContent,
@@ -56,7 +57,6 @@ import {
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Label } from "@/components/ui/label";
 
 const SOL_MINT_ADDRESS = "So11111111111111111111111111111111111111112"; // Wrapped SOL mint
 // Pool type selection
@@ -1070,12 +1070,24 @@ const CreatePool = () => {
 																<SelectItem value="0">
 																	Standard (0.25% fee)
 																</SelectItem>
-																<SelectItem value="1">
-																	Low Fee (0.05% fee)
+																<SelectItem value="5">
+																	Low Fee (0.30% fee)
 																</SelectItem>
-																<SelectItem value="2">
+																<SelectItem
+																	value="4"
+																>
+																	Medium Fee (0.50% fee)
+																</SelectItem>
+																<SelectItem value="1">
 																	High Fee (1% fee)
 																</SelectItem>
+																<SelectItem value="2">
+																	High Fee (2% fee)
+																</SelectItem>
+																<SelectItem value="3">
+																	Very High Fee (4% fee)
+																</SelectItem>
+
 															</SelectContent>
 														</Select>
 														<FormMessage />
