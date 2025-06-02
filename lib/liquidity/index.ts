@@ -31,6 +31,7 @@ export const initSdk = async (
 		console.warn(
 			"using free rpc node might cause unexpected error, strongly suggest uses paid rpc node",
 		);
+
 	console.info(`Connected to rpc ${appUmi.rpc.getEndpoint()} in ${cluster}`);
 	raydium = await Raydium.load({
 		owner,
@@ -55,7 +56,7 @@ export const initSdk = async (
 		await fetchTokenAccountData(appConnection, owner),
 	);
 	appConnection.onAccountChange(owner, async () => {
-		raydium!.account.updateTokenAccount(
+		raydium?.account.updateTokenAccount(
 			await fetchTokenAccountData(appConnection, owner),
 		);
 	});
