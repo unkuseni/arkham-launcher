@@ -2,10 +2,16 @@ import { supabase } from "@/lib/supabaseClient";
 import useUmiStore from "@/store/useUmiStore";
 import {
 	type Keypair,
+	type Signer,
+	type Transaction,
+	type TransactionBuilder,
 	type Umi,
+	createSignerFromKeypair,
 	generateSigner,
 	publicKey,
+	signerIdentity,
 } from "@metaplex-foundation/umi";
+import { base58 } from "@metaplex-foundation/umi/serializers";
 import { uploadJsonToCloudflareR2 } from "./s3-bucket";
 
 export interface KeypairCreationOptions {
@@ -520,4 +526,226 @@ export const getAndReconstructKeypairsByWallet = async (
 	return { success, failed };
 };
 
-// ...existing code...
+/**
+ * Reconstructs a keypair and returns a usable signer
+ * @param url The URL to fetch the keypair from
+ * @param decrypt Whether to decrypt the secret key
+ * @returns Promise<Keypair & { signer: () => Signer } | null>
+ */
+export const getKeypairAsSigner = async (
+	url: string,
+	decrypt = true,
+	umi?: Umi,
+): Promise<{ keypair: Keypair; signer: Signer } | null> => {
+	const keypair = await getKeypairFromUrl(url, decrypt);
+
+	if (!keypair) {
+		return null;
+	}
+
+	// Get umi instance
+	const umiInstance = umi || useUmiStore.getState().umi;
+	if (!umiInstance) {
+		throw new Error("Umi instance not available");
+	}
+
+	// Create a signer from the keypair that can be used with UMI
+	const signer = createSignerFromKeypair(umiInstance, keypair);
+
+	return {
+		keypair,
+		signer,
+	};
+};
+
+/**
+ * Batch reconstruct keypairs as signers
+ * @param userPublicKey The creator's public key
+ * @param decrypt Whether to decrypt the secret keys
+ * @returns Promise with reconstructed signers
+ */
+export const getKeypairSignersByWallet = async (
+	userPublicKey: string,
+	decrypt = true,
+): Promise<{
+	success: Array<{
+		id: string;
+		publicKey: string;
+		keypair: Keypair;
+		signer: Signer;
+	}>;
+	failed: Array<{ id: string; url: string; error: string }>;
+} | null> => {
+	const keypairData = await getKeypairsByWallet(userPublicKey);
+
+	if (!keypairData) {
+		return null;
+	}
+
+	const { umi } = useUmiStore.getState();
+	if (!umi) {
+		throw new Error("Umi instance not available");
+	}
+
+	const success: Array<{
+		id: string;
+		publicKey: string;
+		keypair: Keypair;
+		signer: Signer;
+	}> = [];
+	const failed: Array<{ id: string; url: string; error: string }> = [];
+
+	for (const kp of keypairData.keypairs) {
+		try {
+			const result = await getKeypairAsSigner(kp.r2_url, decrypt, umi);
+			if (result) {
+				success.push({
+					id: kp.id,
+					publicKey: kp.keypair_public_key,
+					keypair: result.keypair,
+					signer: result.signer,
+				});
+			} else {
+				failed.push({
+					id: kp.id,
+					url: kp.r2_url,
+					error: "Failed to reconstruct keypair as signer",
+				});
+			}
+		} catch (error) {
+			failed.push({
+				id: kp.id,
+				url: kp.r2_url,
+				error: error instanceof Error ? error.message : "Unknown error",
+			});
+		}
+	}
+
+	return { success, failed };
+};
+
+/**
+ * Get a specific keypair signer by ID
+ */
+export const getKeypairSignerById = async (
+	keypairId: string,
+	userPublicKey: string,
+	decrypt = true,
+): Promise<{ keypair: Keypair; signer: Signer } | null> => {
+	const keypairData = await getKeypairsByWallet(userPublicKey);
+
+	if (!keypairData) {
+		return null;
+	}
+
+	const targetKeypair = keypairData.keypairs.find((kp) => kp.id === keypairId);
+
+	if (!targetKeypair) {
+		console.error(`Keypair with ID ${keypairId} not found`);
+		return null;
+	}
+
+	return await getKeypairAsSigner(targetKeypair.r2_url, decrypt);
+};
+
+/**
+ * Sign a transaction with a reconstructed keypair
+ */
+export const signTransactionWithKeypair = async (
+	umi: Umi,
+	transaction: TransactionBuilder,
+	keypairUrl: string,
+	decrypt = true,
+): Promise<Transaction | null> => {
+	try {
+		const signerData = await getKeypairAsSigner(keypairUrl, decrypt, umi);
+
+		if (!signerData) {
+			console.error("Failed to reconstruct keypair as signer");
+			return null;
+		}
+
+		umi.use(signerIdentity(signerData.signer));
+
+		// Sign the transaction with the reconstructed signer
+		const signedTx = transaction.buildAndSign(umi);
+
+		return signedTx;
+	} catch (error) {
+		console.error("Error signing transaction:", error);
+		return null;
+	}
+};
+
+/**
+ * Sign a transaction with multiple reconstructed keypairs
+ */
+export const signTransactionWithMultipleKeypairs = async (
+	umi: Umi,
+	transaction: TransactionBuilder,
+	keypairUrls: string[],
+	decrypt = true,
+): Promise<Transaction | null> => {
+	try {
+		const signers: any[] = [];
+
+		for (const url of keypairUrls) {
+			const signerData = await getKeypairAsSigner(url, decrypt, umi);
+			if (signerData) {
+				signers.push(signerData.signer);
+			}
+		}
+
+		if (signers.length === 0) {
+			console.error("No valid signers found");
+			return null;
+		}
+
+		// Sign with all reconstructed signers
+		const signedTx = transaction.buildAndSign(umi);
+
+		return signedTx;
+	} catch (error) {
+		console.error("Error signing transaction with multiple keypairs:", error);
+		return null;
+	}
+};
+
+/**
+ * Execute a transaction with a specific keypair by ID
+ */
+export const executeTransactionWithKeypairId = async (
+	umi: Umi,
+	transaction: TransactionBuilder,
+	keypairId: string,
+	userPublicKey: string,
+	decrypt = true,
+): Promise<{ signature: string } | null> => {
+	try {
+		const signerData = await getKeypairSignerById(
+			keypairId,
+			userPublicKey,
+			decrypt,
+		);
+
+		if (!signerData) {
+			console.error("Failed to get keypair signer");
+			return null;
+		}
+
+		umi.use(signerIdentity(signerData.signer));
+
+		// Set the signer and send the transaction
+		const signedTx = await transaction.buildAndSign(umi);
+		const result = await umi.rpc.sendTransaction(signedTx, {
+			commitment: "confirmed",
+		});
+
+		return {
+			signature: base58.deserialize(result)[0],
+		};
+	} catch (error) {
+		console.error("Error executing transaction:", error);
+		return null;
+	}
+};
