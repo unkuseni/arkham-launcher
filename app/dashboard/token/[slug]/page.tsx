@@ -1,4 +1,4 @@
-
+"use client";
 import BurnTokens from "@/components/forms/token/burn-token";
 import CreateToken from "@/components/forms/token/create-token";
 import DelegateTokens from "@/components/forms/token/delegate-token";
