@@ -47,6 +47,7 @@ import {
 } from '@/lib/create-signers';
 import useUmiStore from '@/store/useUmiStore';
 import { zodResolver } from '@hookform/resolvers/zod';
+import type { Keypair } from '@metaplex-foundation/umi';
 import {
   AlertCircle,
   CheckCircle2,
@@ -100,7 +101,7 @@ const KeypairManager = () => {
   const [keypairs, setKeypairs] = useState<KeypairData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedKeypair, setSelectedKeypair] = useState<KeypairData | null>(null);
-  const [reconstructedKeypair, setReconstructedKeypair] = useState<any>(null);
+  const [reconstructedKeypair, setReconstructedKeypair] = useState<Keypair | null>(null);
   const [showSecretKey, setShowSecretKey] = useState(false);
 
   // Form setup
