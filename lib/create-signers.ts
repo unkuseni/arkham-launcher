@@ -1,4 +1,3 @@
-import { supabase } from "@/lib/supabaseClient";
 import useUmiStore from "@/store/useUmiStore";
 import {
 	type Keypair,
@@ -423,8 +422,6 @@ export const validatePublicKey = (publicKeyString: string): boolean => {
 	}
 };
 
-// ...existing code...
-
 /**
  * Retrieves all keypairs created by a specific wallet
  * @param userPublicKey The creator's public key
@@ -625,7 +622,11 @@ export const getKeypairSignersByWallet = async (
 };
 
 /**
- * Get a specific keypair signer by ID
+ * Retrieves a single keypair by its ID and reconstructs it as a usable signer
+ * @param keypairId The ID of the keypair to retrieve
+ * @param userPublicKey The user's public key
+ * @param decrypt Whether to decrypt the secret key. Defaults to true.
+ * @returns Promise with the reconstructed keypair and its corresponding signer
  */
 export const getKeypairSignerById = async (
 	keypairId: string,
@@ -649,7 +650,12 @@ export const getKeypairSignerById = async (
 };
 
 /**
- * Sign a transaction with a reconstructed keypair
+ * Signs a transaction with a single reconstructed keypair from a given URL
+ * @param umi The UMI instance
+ * @param transaction The transaction to sign
+ * @param keypairUrl The URL of the keypair to use
+ * @param decrypt Whether to decrypt the secret key. Defaults to true.
+ * @returns A promise that resolves with the signed transaction, or null if an error occurred.
  */
 export const signTransactionWithKeypair = async (
 	umi: Umi,
@@ -678,8 +684,15 @@ export const signTransactionWithKeypair = async (
 };
 
 /**
- * Sign a transaction with multiple reconstructed keypairs
+ * Signs a transaction using multiple reconstructed keypairs.
+ *
+ * @param umi - The UMI instance used for transaction operations.
+ * @param transaction - The transaction builder instance to be signed.
+ * @param keypairUrls - An array of URLs from which to fetch and reconstruct keypairs.
+ * @param decrypt - A flag indicating whether to decrypt the keypairs' secret keys. Defaults to true.
+ * @returns A promise that resolves with the signed transaction or null if signing fails.
  */
+
 export const signTransactionWithMultipleKeypairs = async (
 	umi: Umi,
 	transaction: TransactionBuilder,
@@ -712,7 +725,13 @@ export const signTransactionWithMultipleKeypairs = async (
 };
 
 /**
- * Execute a transaction with a specific keypair by ID
+ * Executes a transaction with a reconstructed keypair from a given ID.
+ * @param umi The UMI instance
+ * @param transaction The transaction to execute
+ * @param keypairId The ID of the keypair to use
+ * @param userPublicKey The user's public key
+ * @param decrypt Whether to decrypt the keypair's secret key. Defaults to true.
+ * @returns A promise that resolves with an object containing the transaction signature, or null if an error occurred.
  */
 export const executeTransactionWithKeypairId = async (
 	umi: Umi,

@@ -42,13 +42,11 @@ import {
   type CreateKeypairsResult,
   type KeypairCreationOptions,
   createKeypairAndUpload,
-  getAndReconstructKeypairsByWallet,
   getKeypairFromUrl,
   getKeypairsByWallet
 } from '@/lib/create-signers';
 import useUmiStore from '@/store/useUmiStore';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useWallet } from '@solana/wallet-adapter-react';
 import {
   AlertCircle,
   CheckCircle2,
